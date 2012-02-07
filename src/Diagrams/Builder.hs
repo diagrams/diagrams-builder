@@ -7,7 +7,7 @@
 
 module Diagrams.Builder where
 
-import Diagrams.Prelude
+import Diagrams.Prelude hiding ((<.>))
 
 import Language.Haskell.Interpreter
 
@@ -45,7 +45,7 @@ interpretDiagram :: forall b v.
                => b             -- ^ Backend token
                -> v             -- ^ Dummy vector to identify the vector space
                -> Options b v   -- ^ Rendering options
-               -> String        -- ^ Filename of the module containing the example
+               -> FilePath      -- ^ Filename of the module containing the example
                -> [String]      -- ^ Additional imports needed
                -> String        -- ^ Expression of type @Diagram b v@ to be compiled
                -> IO (Either InterpreterError (Result b v))
@@ -86,6 +86,32 @@ diagramFileHeader modName bird langs imps
       | bird      = map ("> "++)
       | otherwise = id
 
+-- | Create a module with some given diagrams code in a temporary file.
+genTempDiagramModule :: String      -- ^ Source code
+                     -> [String]    -- ^ Extra @LANGUAGE@ pragmas to
+                                    --   use
+                                    --   (@NoMonomorphismRestriction@
+                                    --   is used by default.)
+                     -> [String]    -- ^ Additional imports
+                                    --   ("Diagrams.Prelude" is imported by
+                                    --   default).
+                     -> IO FilePath
+genTempDiagramModule source langs imps = do
+  let useBirdTracks = any (">" `isPrefixOf`) (lines source)
+      ext | useBirdTracks = "lhs"
+          | otherwise     = "hs"
+  tmpDir <- getTemporaryDirectory
+  (tmp, h) <- openTempFile tmpDir ("Diagram" <.> ext)
+  hPutStr h (diagramFileHeader
+              (takeBaseName tmp)
+              useBirdTracks
+              langs
+              imps
+            )
+  hPutStr h source
+  hClose h
+  return tmp
+
 -- | Build a diagram by writing the given source code to a temporary
 --   module and interpreting the given expression.
 buildDiagram :: ( Typeable b, Typeable v
@@ -104,17 +130,7 @@ buildDiagram :: ( Typeable b, Typeable v
                                --   default).
              -> IO (Either InterpreterError (Result b v))
 buildDiagram b v opts source dexp langs imps = do
-  tmpDir <- getTemporaryDirectory
-  (tmp, h) <- openTempFile tmpDir "Diagram.lhs"
-  let useBirdTracks = any (">" `isPrefixOf`) (lines source)
-  hPutStr h (diagramFileHeader
-              (takeBaseName tmp)
-              useBirdTracks
-              langs
-              imps
-            )
-  hPutStr h source
-  hClose h
+  tmp <- genTempDiagramModule source langs imps
   compilation <- interpretDiagram b v opts tmp imps dexp
   removeFile tmp
   return compilation
