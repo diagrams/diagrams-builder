@@ -3,6 +3,7 @@
            , ScopedTypeVariables
            , FlexibleContexts
   #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Diagrams.Builder where
 
@@ -10,12 +11,11 @@ import Diagrams.Prelude
 
 import Language.Haskell.Interpreter
 
-import System.IO
 import System.FilePath
-import System.Directory
+
+import Data.List (intercalate)
 
 import Data.Typeable
-
 deriving instance Typeable Any
 
 -- | Set up the module to be interpreted, in the context of the
