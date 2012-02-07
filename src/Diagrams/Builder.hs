@@ -11,9 +11,11 @@ import Diagrams.Prelude
 
 import Language.Haskell.Interpreter
 
+import System.IO
 import System.FilePath
+import System.Directory
 
-import Data.List (intercalate)
+import Data.List (intercalate, isPrefixOf)
 
 import Data.Typeable
 deriving instance Typeable Any
@@ -34,9 +36,9 @@ setDiagramImports m imps = do
                  ]
                  ++ imps
 
--- | Compile a diagram expression based on the contents of a given
+-- | Interpret a diagram expression based on the contents of a given
 --   source file, using some backend to produce a result.
-compileDiagram :: forall b v.
+interpretDiagram :: forall b v.
                   ( Typeable b, Typeable v
                   , InnerSpace v, OrderedField (Scalar v), Backend b v
                   )
@@ -47,7 +49,7 @@ compileDiagram :: forall b v.
                -> [String]      -- ^ Additional imports needed
                -> String        -- ^ Expression of type @Diagram b v@ to be compiled
                -> IO (Either InterpreterError (Result b v))
-compileDiagram b _ opts m imps dexp =
+interpretDiagram b _ opts m imps dexp =
     runInterpreter $ do
       setDiagramImports m imps
       d <- interpret dexp (as :: Diagram b v)
@@ -84,17 +86,35 @@ diagramFileHeader modName bird langs imps
       | bird      = map ("> "++)
       | otherwise = id
 
-{-
--- | Given the diagram's source code and options for the cairo
---   backend, build the diagram (in the context of standard imports) and
---   render it as requested
-buildDiagram :: String -> Options Cairo R2 -> IO ()
-buildDiagram source opts = do
+-- | Build a diagram by writing the given source code to a temporary
+--   module and interpreting the given expression.
+buildDiagram :: ( Typeable b, Typeable v
+                , InnerSpace v, OrderedField (Scalar v), Backend b v
+                )
+             => b              -- ^ Backend token
+             -> v              -- ^ Dummy vector to fix the vector type
+             -> Options b v    -- ^ Backend-specific options to use
+             -> String         -- ^ Source code
+             -> String         -- ^ Diagram expression to interpret
+             -> [String]       -- ^ Extra @LANGUAGE@ pragmas to use
+                               --   (@NoMonomorphismRestriction@ is used
+                               --   by default.)
+             -> [String]       -- ^ Additional imports
+                               --   ("Diagrams.Prelude" is imported by
+                               --   default).
+             -> IO (Either InterpreterError (Result b v))
+buildDiagram b v opts source dexp langs imps = do
   tmpDir <- getTemporaryDirectory
   (tmp, h) <- openTempFile tmpDir "Diagram.lhs"
-  hPutStr h (diagramFileHeader $ takeBaseName tmp)
+  let useBirdTracks = any (">" `isPrefixOf`) (lines source)
+  hPutStr h (diagramFileHeader
+              (takeBaseName tmp)
+              useBirdTracks
+              langs
+              imps
+            )
   hPutStr h source
   hClose h
-  compileExample tmp opts
+  compilation <- interpretDiagram b v opts tmp imps dexp
   removeFile tmp
--}
+  return compilation
