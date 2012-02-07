@@ -34,7 +34,8 @@ setDiagramImports m imps = do
                  ]
                  ++ imps
 
--- | Compile a 
+-- | Compile a diagram expression based on the contents of a given
+--   source file, using some backend to produce a result.
 compileDiagram :: forall b v. 
                   ( Typeable b, Typeable v
                   , InnerSpace v, OrderedField (Scalar v), Backend b v
@@ -46,10 +47,10 @@ compileDiagram :: forall b v.
                -> [String]      -- ^ Additional imports needed
                -> String        -- ^ Expression of type @Diagram b v@ to be compiled
                -> IO (Either InterpreterError (Result b v))
-compileDiagram b v opts m imps exp =
+compileDiagram b _ opts m imps dexp =
     runInterpreter $ do
       setDiagramImports m imps
-      d <- interpret exp (as :: Diagram b v)
+      d <- interpret dexp (as :: Diagram b v)
       return (renderDia b opts d)
 
 {-
