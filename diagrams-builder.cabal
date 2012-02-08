@@ -1,7 +1,7 @@
 name:                diagrams-builder
 version:             0.1.0.0
 synopsis:            Simple hint-based build service for the diagrams graphics EDSL
--- description:         
+-- description:
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
 license-file:        LICENSE
@@ -13,9 +13,9 @@ cabal-version:       >=1.8
 
 library
   exposed-modules:     Diagrams.Builder
-  build-depends:       base ==4.3.*,
-                       diagrams-lib ==0.5.*, 
-                       hint ==0.3.*, 
-                       filepath ==1.2.*, 
-                       directory ==1.1.*
+  build-depends:       base >=4.2 && < 4.6,
+                       diagrams-lib >=0.3,
+                       hint ==0.3.*,
+                       directory,
+                       filepath
   hs-source-dirs:      src
