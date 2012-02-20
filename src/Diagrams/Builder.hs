@@ -15,7 +15,7 @@ import System.IO
 import System.FilePath
 import System.Directory
 
-import Data.List (intercalate, isPrefixOf)
+import Data.List (intercalate, isPrefixOf, nub)
 
 import Data.Typeable
 deriving instance Typeable Any
@@ -57,7 +57,7 @@ interpretDiagram b _ opts m imps dexp =
 
 ppError :: InterpreterError -> IO ()
 ppError (UnknownError err) = putStrLn $ "UnknownError: " ++ err
-ppError (WontCompile  es)  = putStr . unlines . map errMsg $ es
+ppError (WontCompile  es)  = putStr . unlines . nub . map errMsg $ es
 ppError (NotAllowed   err) = putStrLn $ "NotAllowed: "   ++ err
 ppError (GhcException err) = putStrLn $ "GhcException: " ++ err
 
