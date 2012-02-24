@@ -78,9 +78,12 @@ diagramFileHeader modName bird langs imps
     , "import Diagrams.Prelude"
     ] ++ extraImports
   where
-    languagePragma = "{-# LANGUAGE NoMonomorphismRestriction, "
-                  ++ intercalate ", " langs
+    languagePragma = "{-# LANGUAGE NoMonomorphismRestriction"
+                  ++ otherPragmas
                   ++ "#-}"
+    otherPragmas
+      | null langs = " "
+      | otherwise  = ", " ++ intercalate ", " langs
     extraImports = map ("import " ++) imps
     birdize
       | bird      = map ("> "++)
