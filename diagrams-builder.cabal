@@ -17,5 +17,6 @@ library
                        diagrams-lib >=0.3,
                        hint ==0.3.*,
                        directory,
-                       filepath
+                       filepath,
+                       haskell-src-exts >= 1.11.1 && < 1.12
   hs-source-dirs:      src
