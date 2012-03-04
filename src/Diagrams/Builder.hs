@@ -77,11 +77,11 @@ interpretDiagram b _ opts m imps dexp =
       d <- interpret dexp (as :: Diagram b v)
       return (renderDia b opts d)
 
-ppError :: InterpreterError -> IO ()
-ppError (UnknownError err) = putStrLn $ "UnknownError: " ++ err
-ppError (WontCompile  es)  = putStr . unlines . nub . map errMsg $ es
-ppError (NotAllowed   err) = putStrLn $ "NotAllowed: "   ++ err
-ppError (GhcException err) = putStrLn $ "GhcException: " ++ err
+ppInterpError :: InterpreterError -> String
+ppInterpError (UnknownError err) = "UnknownError: " ++ err
+ppInterpError (WontCompile  es)  = unlines . nub . map errMsg $ es
+ppInterpError (NotAllowed   err) = "NotAllowed: "   ++ err
+ppInterpError (GhcException err) = "GhcException: " ++ err
 
 ------------------------------------------------------------
 -- Manipulating modules
