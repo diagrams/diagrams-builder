@@ -1,5 +1,5 @@
 name:                diagrams-builder
-version:             0.1.0.0
+version:             0.1.0.1
 synopsis:            Simple hint-based build service for the diagrams graphics EDSL
 -- description:
 homepage:            http://projects.haskell.org/diagrams
@@ -10,6 +10,9 @@ maintainer:          diagrams-discuss@googlegroups.com
 category:            Graphics
 build-type:          Simple
 cabal-version:       >=1.8
+Source-repository head
+  type:     darcs
+  location: http://patch-tag.com/r/byorgey/diagrams-builder
 
 library
   exposed-modules:     Diagrams.Builder
@@ -18,5 +21,5 @@ library
                        hint ==0.3.*,
                        directory,
                        filepath,
-                       haskell-src-exts >= 1.11.1 && < 1.12
+                       haskell-src-exts >= 1.11.1 && < 1.14
   hs-source-dirs:      src
