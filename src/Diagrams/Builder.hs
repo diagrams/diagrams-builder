@@ -18,20 +18,22 @@
 -----------------------------------------------------------------------------
 module Diagrams.Builder where
 
+import Diagrams.Builder.Modules
+
 import Diagrams.Prelude hiding ((<.>), e)
 
+import Language.Haskell.Exts (prettyPrint)
 import Language.Haskell.Interpreter hiding (ModuleName)
 
 import System.IO
 import System.FilePath
 import System.Directory
 
-import Data.Function (on)
-import Data.List (isPrefixOf, nub, groupBy, sortBy, foldl1')
-import Data.Ord  (comparing)
+import Crypto.Hash.MD5
 
-import Language.Haskell.Exts
-
+import qualified Data.ByteString.Char8 as B
+import Data.ByteString.Base16
+import Data.List (nub)
 import Data.Typeable
 deriving instance Typeable Any
 
@@ -86,136 +88,19 @@ ppInterpError (NotAllowed   err) = "NotAllowed: "   ++ err
 ppInterpError (GhcException err) = "GhcException: " ++ err
 
 ------------------------------------------------------------
--- Manipulating modules
-------------------------------------------------------------
-
--- | Extend some snippets of source code into a proper module, by
---   combining them intelligently (preserving imports, pragmas, etc.),
---   (possibly) giving it a different name and adding LANGUAGE pragmas
---   and imports if necessary.  Only those pragmas and imports which
---   are not already included in the code will be added.
---
---   Returns a string representing the updated module, or an error
---   message if parsing failed.
-createModule :: Maybe String -- ^ Module name to use
-             -> [String]     -- ^ @LANGUAGE@ pragmas to add
-             -> [String]     -- ^ Imports to add
-             -> [String]     -- ^ Source code
-             -> Either String String
-createModule _ _ _ [] = Left "createModule: no source code given"
-createModule nm langs imps srcs = do
-  ms <- mapM doModuleParse srcs
-  return
-    . prettyPrint
-    . deleteExports
-    . maybe id replaceModuleName nm
-    . addPragmas langs
-    . addImports imps
-    . foldl1' combineModules
-    $ ms
-
-doModuleParse :: String -> Either String Module
-doModuleParse src =
-  case parseFileContents src of
-    ParseFailed _ err -> Left err
-    ParseOk m         -> return m
-
--- | Create a module with some given code in a temporary file.  The
---   given code may be just a code framgent, or a complete module;
---   pragmas, a module declaration, and imports are added as needed
---   (without overwriting any already present).  Returns either an
---   error string or a path to the generated module.  The caller is
---   responsible for deleting this file when done.
-genTempModule :: [String]    -- ^ Source code snippets.  They will be
-                             --   combined intelligently, i.e. not just
-                             --   pasted together textually but
-                             --   combining pragmas, imports,
-                             --   etc. separately.
-              -> [String]    -- ^ Extra @LANGUAGE@ pragmas to use.
-              -> [String]    -- ^ Additional imports.
-              -> IO (Either String FilePath)
-genTempModule source langs imps = do
-  let source'   = map unLit source
-  tmpDir   <- getTemporaryDirectory
-  (tmp, h) <- openTempFile tmpDir ("Diagram.hs")
-  case createModule (Just $ takeBaseName tmp) langs imps source' of
-    Left  err -> removeFile tmp >> return (Left err)
-    Right m   -> do
-      hPutStr h m
-      hClose h
-      return (Right tmp)
-
--- | Remove all the literate comments and bird tracks from a literate
---   Haskell file.  Has no effect on non-literate source.
-unLit :: String -> String
-unLit src
-  | any ("> " `isPrefixOf`) ls = unlines . map (drop 2) . filter ("> " `isPrefixOf`) $ ls
-  | otherwise = src
-  where ls = lines src
-
--- | Dummy value to use when we have to use a @SrcLoc@.
-emptyLoc :: SrcLoc
-emptyLoc = SrcLoc "" 0 0
-
--- | Replace the name of a module.
-replaceModuleName :: String -> Module -> Module
-replaceModuleName m (Module l _ p w e i d) = Module l (ModuleName m) p w e i d
-
--- | Delete module exports.
-deleteExports :: Module -> Module
-deleteExports (Module l n p w _ i d) = Module l n p w Nothing i d
-
--- | Add some @LANGUAGE@ pragmas to a module if necessary.
-addPragmas :: [String] -> Module -> Module
-addPragmas langs (Module l n p w e i d) = Module l n (f p) w e i d
-  where f [] = [LanguagePragma emptyLoc (map Ident langs)]
-        f (LanguagePragma loc ps : rest) = LanguagePragma loc (ps ++ map Ident langs) : rest
-        f (x : rest) = x : f rest
-
--- | Add some imports to a module if necessary.
-addImports :: [String] -> Module -> Module
-addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imps) d
-  where addImport imp is
-          | any ((==imp) . getModuleName . importModule) is = is
-          | otherwise = ImportDecl emptyLoc (ModuleName imp) False False Nothing Nothing Nothing : is
-
--- | Combine two modules into one, with a left bias in the case of
---   things that can't be sensibly combined (e.g. the module name).
---   Note that combining multiple imports of the same module with
---   different import specifications (qualification, hiding, explicit
---   import) is unlikely to work sensibly.
-combineModules :: Module -> Module -> Module
-combineModules (Module l1 n1 ps1 w1 e1 i1 d1)
-               (Module _  _  ps2 _  _  i2 d2) =
-    Module l1 n1 combinedPragmas w1 e1 combinedImports (d1 ++ d2)
-  where
-    combinedPragmas = combinedLangPragmas ++ otherPragmas ps1 ++ otherPragmas ps2
-    combinedImports = map head
-                    . groupBy ((==) `on` importModule)
-                    . sortBy (comparing importModule)
-                    $ i1 ++ i2
-
-    combinedLangPragmas
-      = [LanguagePragma emptyLoc (nub (getLangPragmas ps1 ++ getLangPragmas ps2))]
-
-    getLangPragmas = concatMap getLangPragma
-    getLangPragma (LanguagePragma _ ns) = ns
-    getLangPragma _                     = []
-
-    otherPragmas = filter (not . isLangPragma)
-    isLangPragma (LanguagePragma {}) = True
-    isLangPragma _                   = False
-
--- | Convert a @ModuleName@ to a @String@.
-getModuleName :: ModuleName -> String
-getModuleName (ModuleName n) = n
-
-------------------------------------------------------------
 -- Build a diagram using a temporary file
 ------------------------------------------------------------
 
 -- XXX add lots more documentation to buildDiagram, and some examples
 -- perhaps
+
+-- | Potential results of a dynamic diagram building operation.
+data BuildResult b v =
+    ParseErr  String              -- ^ Parsing of the code failed
+  | InterpErr InterpreterError    -- ^ Interpreting the code failed
+  | Skipped                       -- ^ This diagram did not need to be
+                                  --   regenerated
+  | OK (Result b v)               -- ^ Successful build
 
 -- | Build a diagram by writing the given source code to a temporary
 --   module and interpreting the given expression.  Can return either
@@ -239,13 +124,88 @@ buildDiagram :: ( Typeable b, Typeable v
              -> [String]       -- ^ Additional imports
                                --   ("Diagrams.Prelude" is imported by
                                --   default).
-             -> IO (Either String (Either InterpreterError (Result b v)))
-buildDiagram b v opts source dexp langs imps = do
-  mtmp <- genTempModule source ("NoMonomorphismRestriction" : langs)
-                               ("Diagrams.Prelude" : imps)
-  case mtmp of
-    Left err -> return (Left err)
-    Right tmp -> do
-      compilation <- interpretDiagram b v opts tmp imps dexp
-      removeFile tmp
-      return (Right compilation)
+             -> (String -> IO (Maybe (Options b v -> Options b v)))
+                               -- ^ A function to decide whether a
+                               --   particular diagram needs to be
+                               --   regenerated.  It will be passed
+                               --   the final assembled source for the
+                               --   diagram (but with the module name
+                               --   set to @Main@ instead of something
+                               --   auto-generated, so that hashing
+                               --   the source will produce consistent
+                               --   results across runs).  A result of
+                               --   'Just' means the diagram /should/
+                               --   be built; 'Nothing' means it
+                               --   should not.  Additionally, in the
+                               --   case that it should be built, a
+                               --   function is returned for updating
+                               --   the rendering options.  This can
+                               --   be used, e.g. for setting a
+                               --   requested output file name to
+                               --   something based on a hash of the
+                               --   diagram source.
+                               --
+                               --   Two standard decision functions
+                               --   are provided for convenience:
+                               --   'alwaysRegenerate' returns 'Just
+                               --   id' no matter what;
+                               --   'hashedRegenerate' creates a hash
+                               --   of the diagram source and looks
+                               --   for a file with that name in a
+                               --   given directory.
+             -> IO (BuildResult b v)
+buildDiagram b v opts source dexp langs imps shouldRegen = do
+  let source'   = map unLit source
+  case createModule
+         Nothing
+         ("NoMonomorphismRestriction" : langs)
+         ("Diagrams.Prelude" : imps)
+         source' of
+    Left  err -> return (ParseErr err)
+    Right m   -> do
+      regen <- shouldRegen (prettyPrint m)
+      case regen of
+        Nothing  -> return Skipped
+        Just upd -> do
+          tmpDir   <- getTemporaryDirectory
+          (tmp, h) <- openTempFile tmpDir ("Diagram.hs")
+          let m' = replaceModuleName (takeBaseName tmp) m
+          hPutStr h (prettyPrint m')
+          hClose h
+
+          compilation <- interpretDiagram b v (upd opts) tmp imps dexp
+          removeFile tmp
+          return $ either InterpErr OK compilation
+
+-- | Convenience function suitable to be given as the final argument
+--   to 'buildDiagram'.  It implements the simple policy of always
+--   rebuilding every diagram.
+alwaysRegenerate :: String -> IO (Maybe (a -> a))
+alwaysRegenerate _ = return (Just id)
+
+-- | Convenience function suitable to be given as the final argument
+--   to 'buildDiagram'.  It works by hashing the given diagram source,
+--   and looking in the specified directory for any files whose base
+--   names are equal to the hash.  If there is such a file, it
+--   specifies that the diagram should not be rebuilt.  If there is
+--   not such a file, it specifies that the diagram should be rebuilt,
+--   and uses the provided function to update the rendering options
+--   based on the generated hash.  (i.e. most likely one would want to
+--   set the requested output file to the hash followed by some
+--   extension).
+hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
+                                        --   an update to rendering
+                                        --   options, given a new base
+                                        --   filename computed from a
+                                        --   hash of the diagram
+                                        --   source.
+                 -> FilePath            -- ^ The directory in which to
+                                        --   look for generated files
+                 -> String              -- ^ The diagram source
+                 -> IO (Maybe (a -> a))
+hashedRegenerate upd dir src = do
+  let fileBase = B.unpack . encode . hash . B.pack $ src
+  files <- getDirectoryContents dir
+  case any ((fileBase==) . takeBaseName) files of
+    True  -> return Nothing
+    False -> return $ Just (upd fileBase)
