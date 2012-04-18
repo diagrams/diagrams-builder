@@ -1,7 +1,11 @@
 name:                diagrams-builder
-version:             0.1.0.1
-synopsis:            Simple hint-based build service for the diagrams graphics EDSL
--- description:
+version:             0.2
+synopsis:            hint-based build service for the diagrams graphics EDSL.
+description:         diagrams-builder provides backend-agnostic tools for
+                     dynamically turning code into compiled diagrams, using
+                     the "hint" wrapper to the GHC API.  Useful for creating
+                     tools to compile diagrams code embedded in other documents.
+                     Supports conditional recompilation using hashing.
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
 license-file:        LICENSE

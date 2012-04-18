@@ -22,8 +22,8 @@ import Language.Haskell.Exts
 ------------------------------------------------------------
 
 -- | Extend some snippets of source code into a proper module, by
---   combining them intelligently (preserving imports, pragmas, etc.),
---   (possibly) giving it a different name and adding LANGUAGE pragmas
+--   combining them intelligently (preserving imports, pragmas, /etc./),
+--   (possibly) giving it a different name, and adding @LANGUAGE@ pragmas
 --   and imports if necessary.  Only those pragmas and imports which
 --   are not already included in the code will be added.
 --
@@ -45,6 +45,8 @@ createModule nm langs imps srcs = do
     . foldl1' combineModules
     $ ms
 
+-- | Run the haskell-src-exts parser on a @String@ representing some
+--   Haskell code, producing a @Module@ or an error message.
 doModuleParse :: String -> Either String Module
 doModuleParse src =
   case parseFileContents src of
@@ -86,7 +88,7 @@ addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imp
           | otherwise = ImportDecl emptyLoc (ModuleName imp) False False Nothing Nothing Nothing : is
 
 -- | Combine two modules into one, with a left bias in the case of
---   things that can't be sensibly combined (e.g. the module name).
+--   things that can't be sensibly combined (/e.g./ the module name).
 --   Note that combining multiple imports of the same module with
 --   different import specifications (qualification, hiding, explicit
 --   import) is unlikely to work sensibly.

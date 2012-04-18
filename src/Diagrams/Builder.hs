@@ -16,7 +16,19 @@
 -- preprocessors to interpret diagrams code embedded in documents.
 --
 -----------------------------------------------------------------------------
-module Diagrams.Builder where
+module Diagrams.Builder
+       ( -- * Building diagrams
+
+         buildDiagram, BuildResult(..)
+       , alwaysRegenerate, hashedRegenerate
+
+         -- * Interpreting diagrams
+
+       , setDiagramImports
+       , interpretDiagram
+       , ppInterpError
+
+       ) where
 
 import Diagrams.Builder.Modules
 
@@ -81,6 +93,7 @@ interpretDiagram b _ opts m imps dexp =
       d <- interpret dexp (as :: Diagram b v)
       return (renderDia b opts d)
 
+-- | Pretty-print an @InterpreterError@.
 ppInterpError :: InterpreterError -> String
 ppInterpError (UnknownError err) = "UnknownError: " ++ err
 ppInterpError (WontCompile  es)  = unlines . nub . map errMsg $ es
@@ -96,11 +109,13 @@ ppInterpError (GhcException err) = "GhcException: " ++ err
 
 -- | Potential results of a dynamic diagram building operation.
 data BuildResult b v =
-    ParseErr  String              -- ^ Parsing of the code failed
-  | InterpErr InterpreterError    -- ^ Interpreting the code failed
+    ParseErr  String              -- ^ Parsing of the code failed.
+  | InterpErr InterpreterError    -- ^ Interpreting the code
+                                  --   failed. See 'ppInterpError'.
   | Skipped                       -- ^ This diagram did not need to be
-                                  --   regenerated
-  | OK (Result b v)               -- ^ Successful build
+                                  --   regenerated.
+  | OK (Result b v)               -- ^ A successful build, yielding a
+                                  --   backend-specific result.
 
 -- | Build a diagram by writing the given source code to a temporary
 --   module and interpreting the given expression.  Can return either
@@ -140,15 +155,15 @@ buildDiagram :: ( Typeable b, Typeable v
                                --   case that it should be built, a
                                --   function is returned for updating
                                --   the rendering options.  This can
-                               --   be used, e.g. for setting a
+                               --   be used, /e.g./, for setting a
                                --   requested output file name to
                                --   something based on a hash of the
                                --   diagram source.
                                --
                                --   Two standard decision functions
                                --   are provided for convenience:
-                               --   'alwaysRegenerate' returns 'Just
-                               --   id' no matter what;
+                               --   'alwaysRegenerate' returns @Just
+                               --   id@ no matter what;
                                --   'hashedRegenerate' creates a hash
                                --   of the diagram source and looks
                                --   for a file with that name in a
@@ -185,14 +200,13 @@ alwaysRegenerate _ = return (Just id)
 
 -- | Convenience function suitable to be given as the final argument
 --   to 'buildDiagram'.  It works by hashing the given diagram source,
---   and looking in the specified directory for any files whose base
---   names are equal to the hash.  If there is such a file, it
---   specifies that the diagram should not be rebuilt.  If there is
---   not such a file, it specifies that the diagram should be rebuilt,
---   and uses the provided function to update the rendering options
---   based on the generated hash.  (i.e. most likely one would want to
---   set the requested output file to the hash followed by some
---   extension).
+--   and looking in the specified directory for any file whose base
+--   name is equal to the hash.  If there is such a file, it specifies
+--   that the diagram should not be rebuilt.  Otherwise, it specifies
+--   that the diagram should be rebuilt, and uses the provided
+--   function to update the rendering options based on the generated
+--   hash.  (Most likely, one would want to set the requested
+--   output file to the hash followed by some extension.)
 hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                                         --   an update to rendering
                                         --   options, given a new base
@@ -201,7 +215,7 @@ hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                                         --   source.
                  -> FilePath            -- ^ The directory in which to
                                         --   look for generated files
-                 -> String              -- ^ The diagram source
+                 -> String
                  -> IO (Maybe (a -> a))
 hashedRegenerate upd dir src = do
   let fileBase = B.unpack . encode . hash . B.pack $ src
