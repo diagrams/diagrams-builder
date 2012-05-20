@@ -108,14 +108,15 @@ ppInterpError (GhcException err) = "GhcException: " ++ err
 -- perhaps
 
 -- | Potential results of a dynamic diagram building operation.
-data BuildResult b v =
+data BuildResult b v x =
     ParseErr  String              -- ^ Parsing of the code failed.
   | InterpErr InterpreterError    -- ^ Interpreting the code
                                   --   failed. See 'ppInterpError'.
-  | Skipped                       -- ^ This diagram did not need to be
+  | Skipped x                     -- ^ This diagram did not need to be
                                   --   regenerated.
-  | OK (Result b v)               -- ^ A successful build, yielding a
-                                  --   backend-specific result.
+  | OK x (Result b v)             -- ^ A successful build, yielding a
+                                  --   backend-specific result and
+                                  --   some extra information.
 
 -- | Build a diagram by writing the given source code to a temporary
 --   module and interpreting the given expression.  Can return either
@@ -139,7 +140,7 @@ buildDiagram :: ( Typeable b, Typeable v
              -> [String]       -- ^ Additional imports
                                --   ("Diagrams.Prelude" is imported by
                                --   default).
-             -> (String -> IO (Maybe (Options b v -> Options b v)))
+             -> (String -> IO (x, Maybe (Options b v -> Options b v)))
                                -- ^ A function to decide whether a
                                --   particular diagram needs to be
                                --   regenerated.  It will be passed
@@ -148,27 +149,34 @@ buildDiagram :: ( Typeable b, Typeable v
                                --   set to @Main@ instead of something
                                --   auto-generated, so that hashing
                                --   the source will produce consistent
-                               --   results across runs).  A result of
+                               --   results across runs). It can
+                               --   return some information (such as a
+                               --   hash of the source) via the @x@
+                               --   result, which will be passed
+                               --   through to the result of
+                               --   'buildDiagram'.  More importantly,
+                               --   it decides whether the diagram
+                               --   should be built: a result of
                                --   'Just' means the diagram /should/
                                --   be built; 'Nothing' means it
-                               --   should not.  Additionally, in the
-                               --   case that it should be built, a
-                               --   function is returned for updating
-                               --   the rendering options.  This can
-                               --   be used, /e.g./, for setting a
-                               --   requested output file name to
-                               --   something based on a hash of the
-                               --   diagram source.
+                               --   should not. In the case that it
+                               --   should be built, it returns a
+                               --   function for updating the
+                               --   rendering options.  This could be
+                               --   used, /e.g./, to request a
+                               --   filename based on a hash of the
+                               --   source.
                                --
                                --   Two standard decision functions
                                --   are provided for convenience:
-                               --   'alwaysRegenerate' returns @Just
-                               --   id@ no matter what;
+                               --   'alwaysRegenerate' returns no
+                               --   extra information and always
+                               --   decides to regenerate the diagram;
                                --   'hashedRegenerate' creates a hash
                                --   of the diagram source and looks
                                --   for a file with that name in a
                                --   given directory.
-             -> IO (BuildResult b v)
+             -> IO (BuildResult b v x)
 buildDiagram b v opts source dexp langs imps shouldRegen = do
   let source'   = map unLit source
   case createModule
@@ -180,8 +188,8 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
     Right m   -> do
       regen <- shouldRegen (prettyPrint m)
       case regen of
-        Nothing  -> return Skipped
-        Just upd -> do
+        (info, Nothing)  -> return $ Skipped info
+        (info, Just upd) -> do
           tmpDir   <- getTemporaryDirectory
           (tmp, h) <- openTempFile tmpDir ("Diagram.hs")
           let m' = replaceModuleName (takeBaseName tmp) m
@@ -190,13 +198,13 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
 
           compilation <- interpretDiagram b v (upd opts) tmp imps dexp
           removeFile tmp
-          return $ either InterpErr OK compilation
+          return $ either InterpErr (OK info) compilation
 
 -- | Convenience function suitable to be given as the final argument
 --   to 'buildDiagram'.  It implements the simple policy of always
 --   rebuilding every diagram.
-alwaysRegenerate :: String -> IO (Maybe (a -> a))
-alwaysRegenerate _ = return (Just id)
+alwaysRegenerate :: String -> IO ((), Maybe (a -> a))
+alwaysRegenerate _ = return ((), Just id)
 
 -- | Convenience function suitable to be given as the final argument
 --   to 'buildDiagram'.  It works by hashing the given diagram source,
@@ -205,8 +213,9 @@ alwaysRegenerate _ = return (Just id)
 --   that the diagram should not be rebuilt.  Otherwise, it specifies
 --   that the diagram should be rebuilt, and uses the provided
 --   function to update the rendering options based on the generated
---   hash.  (Most likely, one would want to set the requested
---   output file to the hash followed by some extension.)
+--   hash.  (Most likely, one would want to set the requested output
+--   file to the hash followed by some extension.)  It also returns
+--   the generated hash.
 hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                                         --   an update to rendering
                                         --   options, given a new base
@@ -216,10 +225,10 @@ hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                  -> FilePath            -- ^ The directory in which to
                                         --   look for generated files
                  -> String
-                 -> IO (Maybe (a -> a))
+                 -> IO (String, Maybe (a -> a))
 hashedRegenerate upd dir src = do
   let fileBase = B.unpack . encode . hash . B.pack $ src
   files <- getDirectoryContents dir
   case any ((fileBase==) . takeBaseName) files of
-    True  -> return Nothing
-    False -> return $ Just (upd fileBase)
+    True  -> return (fileBase, Nothing)
+    False -> return (fileBase, Just (upd fileBase))
