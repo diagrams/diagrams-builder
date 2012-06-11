@@ -16,6 +16,7 @@ import Data.List (foldl1', isPrefixOf, groupBy, sortBy, nub)
 import Data.Ord  (comparing)
 
 import Language.Haskell.Exts
+import Language.Haskell.Exts.SrcLoc (noLoc)
 
 ------------------------------------------------------------
 -- Manipulating modules
@@ -61,10 +62,6 @@ unLit src
   | otherwise = src
   where ls = lines src
 
--- | Dummy value to use when we have to use a @SrcLoc@.
-emptyLoc :: SrcLoc
-emptyLoc = SrcLoc "" 0 0
-
 -- | Replace the name of a module.
 replaceModuleName :: String -> Module -> Module
 replaceModuleName m (Module l _ p w e i d) = Module l (ModuleName m) p w e i d
@@ -76,7 +73,7 @@ deleteExports (Module l n p w _ i d) = Module l n p w Nothing i d
 -- | Add some @LANGUAGE@ pragmas to a module if necessary.
 addPragmas :: [String] -> Module -> Module
 addPragmas langs (Module l n p w e i d) = Module l n (f p) w e i d
-  where f [] = [LanguagePragma emptyLoc (map Ident langs)]
+  where f [] = [LanguagePragma noLoc (map Ident langs)]
         f (LanguagePragma loc ps : rest) = LanguagePragma loc (ps ++ map Ident langs) : rest
         f (x : rest) = x : f rest
 
@@ -85,7 +82,7 @@ addImports :: [String] -> Module -> Module
 addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imps) d
   where addImport imp is
           | any ((==imp) . getModuleName . importModule) is = is
-          | otherwise = ImportDecl emptyLoc (ModuleName imp) False False Nothing Nothing Nothing : is
+          | otherwise = ImportDecl noLoc (ModuleName imp) False False Nothing Nothing Nothing : is
 
 -- | Combine two modules into one, with a left bias in the case of
 --   things that can't be sensibly combined (/e.g./ the module name).
@@ -104,7 +101,7 @@ combineModules (Module l1 n1 ps1 w1 e1 i1 d1)
                     $ i1 ++ i2
 
     combinedLangPragmas
-      = [LanguagePragma emptyLoc (nub (getLangPragmas ps1 ++ getLangPragmas ps2))]
+      = [LanguagePragma noLoc (nub (getLangPragmas ps1 ++ getLangPragmas ps2))]
 
     getLangPragmas = concatMap getLangPragma
     getLangPragma (LanguagePragma _ ns) = ns
