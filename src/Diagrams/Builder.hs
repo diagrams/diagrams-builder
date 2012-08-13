@@ -186,7 +186,7 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
          source' of
     Left  err -> return (ParseErr err)
     Right m   -> do
-      regen <- shouldRegen (prettyPrint m)
+      regen <- shouldRegen (prettyPrint m ++ dexp)
       case regen of
         (info, Nothing)  -> return $ Skipped info
         (info, Just upd) -> do
