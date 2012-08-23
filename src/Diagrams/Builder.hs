@@ -128,11 +128,13 @@ buildDiagram :: ( Typeable b, Typeable v
              => b              -- ^ Backend token
              -> v              -- ^ Dummy vector to fix the vector type
              -> Options b v    -- ^ Backend-specific options to use
-             -> [String]       -- ^ Source code snippets.  It will be
-                               --   combined intelligently, i.e. not
-                               --   just pasted together textually but
+             -> [String]       -- ^ Source code snippets.  Each should
+                               --   be a syntactically valid Haskell
+                               --   module.  They will be combined
+                               --   intelligently, /i.e./ not just
+                               --   pasted together textually but
                                --   combining pragmas, imports,
-                               --   etc. separately.
+                               --   /etc./ separately.
              -> String         -- ^ Diagram expression to interpret
              -> [String]       -- ^ Extra @LANGUAGE@ pragmas to use
                                --   (@NoMonomorphismRestriction@ is used
@@ -224,7 +226,16 @@ hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                                         --   source.
                  -> FilePath            -- ^ The directory in which to
                                         --   look for generated files
-                 -> String
+                 -> String              -- ^ The \"source\" to
+                                        -- hash. Note that this does
+                                        -- not actually have to be
+                                        -- valid source code.  A
+                                        -- common trick is to
+                                        -- concatenate the actual
+                                        -- source code with String
+                                        -- representations of any
+                                        -- other information on which
+                                        -- the diagram depends.
                  -> IO (String, Maybe (a -> a))
 hashedRegenerate upd dir src = do
   let fileBase = B.unpack . encode . hash . B.pack $ src
