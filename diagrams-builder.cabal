@@ -14,6 +14,14 @@ description:         @diagrams-builder@ provides backend-agnostic tools for
                      embedded in Markdown-formatted blog posts.  It is
                      also used by a package for rendering diagrams
                      code embedded in LaTeX documents.
+                     .
+                     An executable specific to the cairo backend is
+                     included (more executables specific to other
+                     backends will be included in the future).  It
+                     takes an input file and an expression to render
+                     and outputs an image file, using the cairo
+                     backend.  If you want it you must explicitly
+                     enable the cairo flag with @-fcairo@.
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
 license-file:        LICENSE
@@ -45,3 +53,26 @@ library
                        DeriveDataTypeable,
                        ScopedTypeVariables,
                        FlexibleContexts
+
+flag cairo
+  description: install cairo-specific builder tool
+  default:     False
+
+executable diagrams-builder-cairo
+  main-is:             diagrams-builder-cairo.hs
+  hs-source-dirs:      src/tools
+  default-language:    Haskell2010
+  other-extensions:    StandaloneDeriving,
+                       DeriveDataTypeable
+
+  if !flag(cairo)
+    buildable: False
+
+  if flag(cairo)
+    build-depends:     base >= 4 && < 5,
+                       filepath,
+                       directory,
+                       diagrams-builder,
+                       diagrams-lib >= 0.5 && < 0.6,
+                       diagrams-cairo >= 0.5 && < 0.6,
+                       cmdargs >= 0.6 && < 0.11
