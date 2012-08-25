@@ -38,7 +38,7 @@ Source-repository head
 library
   exposed-modules:     Diagrams.Builder
                        Diagrams.Builder.Modules
-  build-depends:       base >=4.2 && < 4.6,
+  build-depends:       base >=4.2 && < 4.7,
                        diagrams-lib >=0.3 && < 0.6,
                        hint ==0.3.*,
                        directory,
