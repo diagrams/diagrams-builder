@@ -12,7 +12,7 @@
 -- License     :  BSD-style (see LICENSE)
 -- Maintainer  :  diagrams-discuss@googlegroups.com
 --
--- Tools for dynamically building diagrams, for e.g. creating
+-- Tools for dynamically building diagrams, for /e.g./ creating
 -- preprocessors to interpret diagrams code embedded in documents.
 --
 -----------------------------------------------------------------------------
@@ -103,9 +103,6 @@ ppInterpError (GhcException err) = "GhcException: " ++ err
 ------------------------------------------------------------
 -- Build a diagram using a temporary file
 ------------------------------------------------------------
-
--- XXX add lots more documentation to buildDiagram, and some examples
--- perhaps
 
 -- | Potential results of a dynamic diagram building operation.
 data BuildResult b v x =
