@@ -1,5 +1,5 @@
 name:                diagrams-builder
-version:             0.2
+version:             0.2.0.0
 synopsis:            hint-based build service for the diagrams graphics EDSL.
 description:         @diagrams-builder@ provides backend-agnostic tools for
                      dynamically turning code into rendered diagrams,
@@ -25,6 +25,7 @@ description:         @diagrams-builder@ provides backend-agnostic tools for
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
 license-file:        LICENSE
+extra-source-files:  CHANGES, latex/diagrams-latex.sty
 author:              Brent Yorgey
 maintainer:          diagrams-discuss@googlegroups.com
 category:            Graphics
