@@ -1,6 +1,7 @@
 name:                diagrams-builder
 version:             0.2.0.0
 synopsis:            hint-based build service for the diagrams graphics EDSL.
+
 description:         @diagrams-builder@ provides backend-agnostic tools for
                      dynamically turning code into rendered diagrams,
                      using the @hint@ wrapper to the GHC API.  It
@@ -11,9 +12,7 @@ description:         @diagrams-builder@ provides backend-agnostic tools for
                      embedded in other documents.  For example, it is
                      used by the @BlogLiterately-diagrams@ package (a
                      plugin for @BlogLiterately@) to compile diagrams
-                     embedded in Markdown-formatted blog posts.  It is
-                     also used by a package for rendering diagrams
-                     code embedded in LaTeX documents.
+                     embedded in Markdown-formatted blog posts.
                      .
                      An executable specific to the cairo backend is
                      included (more executables specific to other
@@ -22,6 +21,16 @@ description:         @diagrams-builder@ provides backend-agnostic tools for
                      and outputs an image file, using the cairo
                      backend.  If you want it you must explicitly
                      enable the cairo flag with @-fcairo@.
+                     .
+                     A LaTeX package, @diagrams-latex.sty@, is also
+                     provided in the @latex/@ directory of the source
+                     distribution, which renders diagrams code found
+                     within @diagram@ environments.  It makes use of
+                     the @diagrams-builder-cairo@ executable, so if
+                     you want to use @diagrams-latex.sty@ you should
+                     install @diagrams-builder@ with the @-fcairo@
+                     option.  Note that @diagrams-latex.sty@ is
+                     licensed under the GPL.
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
 license-file:        LICENSE
