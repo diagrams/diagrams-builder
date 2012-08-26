@@ -20,13 +20,15 @@ module Diagrams.Builder
        ( -- * Building diagrams
 
          buildDiagram, BuildResult(..)
+       , ppInterpError
+
+         -- ** Regeneration decision functions
        , alwaysRegenerate, hashedRegenerate
 
          -- * Interpreting diagrams
-
+         -- $interp
        , setDiagramImports
        , interpretDiagram
-       , ppInterpError
 
        ) where
 
@@ -52,6 +54,11 @@ deriving instance Typeable Any
 ------------------------------------------------------------
 -- Interpreting diagrams
 ------------------------------------------------------------
+
+-- $interp
+-- These functions constitute the internals of diagrams-builder.  End
+-- users should not usually need to call them directly; use
+-- 'buildDiagram' instead.
 
 -- | Set up the module to be interpreted, in the context of the
 --   necessary imports.
