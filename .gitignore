@@ -5,3 +5,8 @@ cabal-dev
 *.chi
 *.chs.h
 .virthualenv
+*~
+.hsenv_*
+dist_*
+history
+TAGS
