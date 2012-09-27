@@ -67,7 +67,7 @@ setDiagramImports :: MonadInterpreter m
                   -> [String]    -- ^ Additional necessary
                                  --   imports. @Prelude@,
                                  --   @Diagrams.Prelude@,
-                                 --   @Graphics.Rendering.Diagrams.Core@,
+                                 --   @Diagrams.Core.Types@,
                                  --   and @Data.Monoid@ are included
                                  --   by default.
                   -> m ()
@@ -76,7 +76,7 @@ setDiagramImports m imps = do
     setTopLevelModules [takeBaseName m]
     setImports $ [ "Prelude"
                  , "Diagrams.Prelude"
-                 , "Graphics.Rendering.Diagrams.Core"
+                 , "Diagrams.Core.Types"
                  , "Data.Monoid"
                  ]
                  ++ imps
