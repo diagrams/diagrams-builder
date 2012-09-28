@@ -1,5 +1,5 @@
 name:                diagrams-builder
-version:             0.2.0.0
+version:             0.2.1.0
 synopsis:            hint-based build service for the diagrams graphics EDSL.
 
 description:         @diagrams-builder@ provides backend-agnostic tools for
@@ -49,7 +49,7 @@ library
   exposed-modules:     Diagrams.Builder
                        Diagrams.Builder.Modules
   build-depends:       base >=4.2 && < 4.7,
-                       diagrams-lib >=0.3 && < 0.6,
+                       diagrams-lib >=0.6 && < 0.7,
                        hint ==0.3.*,
                        directory,
                        filepath,
@@ -83,6 +83,6 @@ executable diagrams-builder-cairo
                        filepath,
                        directory,
                        diagrams-builder,
-                       diagrams-lib >= 0.5 && < 0.6,
-                       diagrams-cairo >= 0.5 && < 0.6,
+                       diagrams-lib >= 0.6 && < 0.7,
+                       diagrams-cairo >= 0.6 && < 0.7,
                        cmdargs >= 0.6 && < 0.11
