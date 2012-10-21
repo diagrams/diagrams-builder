@@ -16,7 +16,8 @@ import System.Console.CmdArgs
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
-  let fmt = case FP.takeExtension outFile of
+  let ext = FP.takeExtension outFile
+      fmt = case ext of
               ".png" -> PNG
               ".svg" -> SVG
               ".ps"  -> PS
@@ -36,18 +37,17 @@ compileExample (Build{..}) = do
            []
            [ "Diagrams.Backend.Cairo" ]
            (hashedRegenerate
-             (\hash opts -> opts { cairoFileName = mkFile hash })
+             (\hash opts -> opts { cairoFileName = mkFile hash ext })
              dir
            )
   case res of
     ParseErr err    -> putStrLn ("Parse error in " ++ srcFile) >> putStrLn err
     InterpErr ierr  -> putStrLn ("Error while compiling " ++ srcFile) >>
                        putStrLn (ppInterpError ierr)
-    Skipped hash    -> copyFile (mkFile hash) outFile
-    OK hash (act,_) -> act >> copyFile (mkFile hash) outFile
+    Skipped hash    -> copyFile (mkFile hash ext) outFile
+    OK hash (act,_) -> act >> copyFile (mkFile hash ext) outFile
  where
-  mkFile base = dir FP.</> base FP.<.> "png"
-
+  mkFile base ext = dir FP.</> base FP.<.> ext
 
 build :: Build
 build =
