@@ -30,9 +30,15 @@ module Diagrams.Builder
        , setDiagramImports
        , interpretDiagram
 
+         -- * Tools for creating standalone builder executables
+
+       , Build(..)
+       , defaultBuildOpts
+
        ) where
 
 import Diagrams.Builder.Modules
+import Diagrams.Builder.CmdLine
 
 import Diagrams.Prelude hiding ((<.>), e)
 

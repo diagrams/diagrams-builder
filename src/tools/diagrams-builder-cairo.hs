@@ -47,29 +47,13 @@ compileExample (Build{..}) = do
  where
   mkFile base = dir FP.</> base FP.<.> "png"
 
-data Build = Build { width   :: Maybe Double
-                   , height  :: Maybe Double
-                   , srcFile :: String
-                   , expr    :: String
-                   , outFile :: String
-                   , dir     :: String
-                   }
-  deriving (Typeable, Data)
 
 build :: Build
-build = Build { width    = def &= typ "INT"
-              , height   = def &= typ "INT"
-              , srcFile  = "" &= argPos 0 &= typFile
-              , expr     = "dia"
-                &= typ "EXPRESSION"
-                &= help "Expression to render (default: \"dia\")"
-              , outFile  = "out.png" &= typFile &= help "Output file (default: \"out.png\")"
-              , dir      = "diagrams"
-                &= typDir
-                &= help "Directory in which to store rendered diagrams by hash (default: \"diagrams\")"
-              }
-        &= summary "The diagrams-builder-cairo program, for dynamically rendering diagrams using the cairo backend.  Give it a source file and an expression to render (which may refer to things declared in the source file), and it outputs an image, using hashing to avoid rerendering images unnecessarily."
-        &= program "diagrams-builder-cairo"
+build =
+  defaultBuildOpts
+  { outFile  = "out.png" &= typFile &= help "Output file (default: \"out.png\")" }
+  &= summary "The diagrams-builder-cairo program, for dynamically rendering diagrams using the cairo backend.  Give it a source file and an expression to render (which may refer to things declared in the source file), and it outputs an image, using hashing to avoid rerendering images unnecessarily."
+  &= program "diagrams-builder-cairo"
 
 main :: IO ()
 main = do
