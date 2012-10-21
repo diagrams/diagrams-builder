@@ -9,7 +9,7 @@ import Diagrams.Backend.Cairo.Internal -- due to GHC export bug in 7.4
 
 import Diagrams.Builder
 
-import System.Directory (copyFile)
+import System.Directory (createDirectoryIfMissing, copyFile)
 import qualified System.FilePath as FP
 
 import System.Console.CmdArgs
@@ -24,6 +24,8 @@ compileExample (Build{..}) = do
               _      -> PNG
 
   f   <- readFile srcFile
+
+  createDirectoryIfMissing True dir
 
   res <- buildDiagram
            Cairo
