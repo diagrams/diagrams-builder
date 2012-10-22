@@ -12,7 +12,7 @@
 module Diagrams.Builder.Modules where
 
 import Data.Function (on)
-import Data.List (foldl1', isPrefixOf, groupBy, sortBy, nub)
+import Data.List (foldl', isPrefixOf, groupBy, sortBy, nub)
 import Data.Ord  (comparing)
 
 import Language.Haskell.Exts
@@ -35,7 +35,6 @@ createModule :: Maybe String -- ^ Module name to use
              -> [String]     -- ^ Imports to add
              -> [String]     -- ^ Source code
              -> Either String Module
-createModule _ _ _ [] = Left "createModule: no source code given"
 createModule nm langs imps srcs = do
   ms <- mapM doModuleParse srcs
   return
@@ -43,8 +42,11 @@ createModule nm langs imps srcs = do
     . maybe id replaceModuleName nm
     . addPragmas langs
     . addImports imps
-    . foldl1' combineModules
+    . foldl' combineModules emptyModule
     $ ms
+
+emptyModule :: Module
+emptyModule = Module noLoc (ModuleName "Main") [] Nothing Nothing [] []
 
 -- | Run the haskell-src-exts parser on a @String@ representing some
 --   Haskell code, producing a @Module@ or an error message.
