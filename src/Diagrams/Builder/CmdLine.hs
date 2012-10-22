@@ -39,7 +39,7 @@ defaultBuildOpts =
                &= typ "EXPRESSION"
                &= help "Expression to render (default: \"dia\")"
   , outFile  = def &= typFile &= help "Output file"
-  , dir      = "diagrams"
+  , dir      = ".diagrams_cache"
                &= typDir
-               &= help "Directory in which to store rendered diagrams by hash (default: \"diagrams\")"
+               &= help "Directory in which to store rendered diagrams by hash (default: \".diagrams_cache\")"
   }
