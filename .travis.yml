@@ -7,9 +7,10 @@ before_install:
   - git clone --quiet git://github.com/diagrams/diagrams-core.git diagrams/diagrams-core
   - git clone --quiet git://github.com/diagrams/diagrams-lib.git diagrams/diagrams-lib
   - git clone --quiet git://github.com/diagrams/diagrams-cairo.git diagrams/diagrams-cairo
+  - git clone --quiet git://github.com/diagrams/diagrams-svg.git diagrams/diagrams-svg
   - cd diagrams
   - cabal install gtk2hs-buildtools
-  - cabal install monoid-extras/ dual-tree/ diagrams-core/ diagrams-lib/ diagrams-cairo/
+  - cabal install monoid-extras/ dual-tree/ diagrams-core/ diagrams-lib/ diagrams-cairo/ diagrams-svg/
   - cd ..
 
-script: cabal install -fcairo
+script: cabal install -fcairo -fsvg
