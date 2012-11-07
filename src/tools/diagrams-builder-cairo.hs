@@ -31,7 +31,7 @@ compileExample (Build{..}) = do
   res <- buildDiagram
            Cairo
            zeroV
-           (CairoOptions outFile (mkSizeSpec width height) fmt)
+           (CairoOptions outFile (mkSizeSpec width height) fmt False)
            [f]
            expr
            []
