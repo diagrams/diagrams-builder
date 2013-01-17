@@ -83,6 +83,12 @@
 
 \newcommand\setoutputdir[1]{\def\dtt@outputdir{#1}}
 
+% Options for setting backend
+\DeclareOptionX{backend}[]{\def\dtt@backend{#1}}
+\def\dtt@backend{cairo}  % use cairo as the default backend
+\DeclareOptionX{extension}[]{\def\dtt@extension{#1}}
+\def\dtt@extension{pdf}  % default output extension of .pdf
+
 \ExecuteOptionsX{shell}
 
 \ProcessOptionsX\relax
@@ -132,7 +138,7 @@
         You'll need to compile the diagrams yourself.}
 \fi
 \newcounter{dtt@fignum}
-\def\dtt@figname{\dtt@outputdir\jobname-diagrams-latex-fig\thedtt@fignum}
+\def\dtt@figname{\dtt@outputdir/\jobname-diagrams-latex-fig\thedtt@fignum}
 
 
 %%%%%%%%%%%%%%%%% diagrams-latex code
@@ -150,7 +156,13 @@
     \def\dtt@outputdir{#1}
 }
 \define@key{dtt}{file}[]{%
-    \def\dtt@figname{\dtt@outputdir#1}
+    \def\dtt@figname{\dtt@outputdir/#1}
+}
+\define@key{dtt}{backend}[]{%
+    \def\dtt@backend{#1}
+}
+\define@key{dtt}{extension}[]{%
+    \def\dtt@extension{#1}
 }
 
 \define@key{dtt}{shell}[]{\dtt@ShellEscapetrue}
@@ -161,7 +173,8 @@
 \newwrite\verbatim@out
 \def\diagramslatexverbatimwrite#1{%
     \def\BeforeStream{
-        \message{Opening diagrams-latex stream #1}%
+        \message{Opening diagrams-latex stream #1
+        }%
     }%
     \@bsphack
     \immediate\openout \verbatim@out #1
@@ -195,30 +208,31 @@
     \ifdtt@ForceShellEscape
         \dtt@ShellEscapetrue
     \fi
-    \xdef\diagramslatexCutFile{\dtt@figname.txt}
+    \immediate\write18{mkdir -p \dtt@outputdir}
+    \xdef\diagramslatexCutFile{\dtt@figname.hs}
     \diagramslatexverbatimwrite{\diagramslatexCutFile}}
     {\enddiagramslatexverbatimwrite%
     \diagramslatexgraphicsinclude}
 
 \long\gdef\diagramslatexgraphicsprocess{%
     \ifdtt@ShellEscape
-        \IfFileExists{\dtt@figname.txt}{%
-            \immediate\write18{diagrams-builder-cairo -o \dtt@figname.pdf\space
+        \IfFileExists{\dtt@figname.hs}{%
+            \immediate\write18{diagrams-builder-\dtt@backend\space -o \dtt@figname.\dtt@extension\space
                 \dtt@width\space
                 \dtt@height\space
-                \dtt@figname.txt\space }%
-            \IfFileExists{\dtt@figname.pdf}{%
-                \PackageInfo{diagrams-latex}{\dtt@figname.txt converted}
+                \dtt@figname.hs\space }%
+            \IfFileExists{\dtt@figname.\dtt@extension}{%
+                \PackageInfo{diagrams-latex}{\dtt@figname.hs converted}
             }
             {\PackageWarningNoLine{diagrams-latex}
-                {Conversion of \dtt@figname.txt failed}}}{}
+                {Conversion of \dtt@figname.hs failed}}}{}
             \fi
 }
 
 \long\gdef\diagramslatexgraphicsinclude{\diagramslatexgraphicsprocess%
-    \IfFileExists{\dtt@figname.pdf}{{\includegraphics{\dtt@figname.pdf}}}
+    \IfFileExists{\dtt@figname.\dtt@extension}{{\includegraphics{\dtt@figname.\dtt@extension}}}
     {\PackageWarningNoLine{diagrams-latex}
-            {Please convert \dtt@figname.txt manually}}
+            {Please convert \dtt@figname.hs manually}}
 }
 
 \endinput
