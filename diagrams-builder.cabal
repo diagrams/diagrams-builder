@@ -77,6 +77,11 @@ flag svg
   default:     False
   manual:      True
 
+flag ps
+  description: install postscript-specific builder tool
+  default:     False
+  manual:      True
+
 executable diagrams-builder-cairo
   main-is:             diagrams-builder-cairo.hs
   hs-source-dirs:      src/tools
@@ -115,4 +120,23 @@ executable diagrams-builder-svg
                        diagrams-svg >= 0.6 && < 0.7,
                        blaze-svg >= 0.3.3 && < 0.4,
                        bytestring >= 0.9.2 && < 0.11,
+                       cmdargs >= 0.6 && < 0.11
+
+executable diagrams-builder-ps
+  main-is:             diagrams-builder-ps.hs
+  hs-source-dirs:      src/tools
+  default-language:    Haskell2010
+  other-extensions:    DeriveDataTypeable
+                       RecordWildCards
+  
+  if !flag(ps)
+    buildable: False
+
+  if flag(ps)
+    build-depends:     base >= 4 && < 5,
+                       filepath,
+                       directory,
+                       diagrams-builder,
+                       diagrams-lib >= 0.6 && < 0.7,
+                       diagrams-postscript >= 0.6 && < 0.7,
                        cmdargs >= 0.6 && < 0.11
