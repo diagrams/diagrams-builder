@@ -27,7 +27,7 @@ compileExample (Build{..}) = do
            []
            [ "Diagrams.Backend.Postscript" ]
            (hashedRegenerate
-             (\hash opts -> opts { fileName = mkFile hash })
+             (\hash opts -> opts { psfileName = mkFile hash })
              dir
            )
 
