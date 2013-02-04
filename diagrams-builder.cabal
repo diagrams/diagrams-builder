@@ -14,23 +14,19 @@ description:         @diagrams-builder@ provides backend-agnostic tools for
                      plugin for @BlogLiterately@) to compile diagrams
                      embedded in Markdown-formatted blog posts.
                      .
-                     Executables specific to the cairo and SVG
+                     Executables specific to the cairo, SVG, and postscript
                      backends are included (more executables specific
                      to other backends may be included in the future).
-                     Both take an input file and an expression to
-                     render, and outputs an image file.  If you want
+                     All take an input file and an expression to
+                     render, and output an image file.  If you want
                      these executables you must explicitly enable the
-                     @-fcairo@ and/or @-fsvg@ flags.
+                     @-fcairo@, @-fsvg@, or @-fps@ flags.
                      .
                      A LaTeX package, @diagrams-latex.sty@, is also
                      provided in the @latex/@ directory of the source
                      distribution, which renders diagrams code found
-                     within @diagram@ environments.  It makes use of
-                     the @diagrams-builder-cairo@ executable, so if
-                     you want to use @diagrams-latex.sty@ you should
-                     install @diagrams-builder@ with the @-fcairo@
-                     option.  Note that @diagrams-latex.sty@ is
-                     licensed under the GPL.
+                     within @diagram@ environments. Note that 
+                     @diagrams-latex.sty@ is licensed under the GPL.
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
 license-file:        LICENSE
