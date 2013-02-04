@@ -1,3 +1,9 @@
+0.3: 3 Feburary 2013
+--------------------
+
++ new `diagrams-builder-postscript` tool
++ miscellaneous improvements to `diagrams-latex.sty`
+
 0.2.1.0: 11 December 2012
 -------------------------
 
