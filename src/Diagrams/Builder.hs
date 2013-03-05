@@ -134,6 +134,7 @@ data BuildResult b v x =
 --   or the final result.
 buildDiagram :: ( Typeable b, Typeable v
                 , InnerSpace v, OrderedField (Scalar v), Backend b v
+                , Show (Options b v)
                 )
              => b              -- ^ Backend token
              -> v              -- ^ Dummy vector to fix the vector type
@@ -198,7 +199,7 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
          source' of
     Left  err -> return (ParseErr err)
     Right m   -> do
-      regen <- shouldRegen (prettyPrint m ++ dexp)
+      regen <- shouldRegen (prettyPrint m ++ dexp ++ show opts)
       case regen of
         (info, Nothing)  -> return $ Skipped info
         (info, Just upd) -> do
