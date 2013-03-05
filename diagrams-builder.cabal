@@ -25,7 +25,7 @@ description:         @diagrams-builder@ provides backend-agnostic tools for
                      A LaTeX package, @diagrams-latex.sty@, is also
                      provided in the @latex/@ directory of the source
                      distribution, which renders diagrams code found
-                     within @diagram@ environments. Note that 
+                     within @diagram@ environments. Note that
                      @diagrams-latex.sty@ is licensed under the GPL.
 homepage:            http://projects.haskell.org/diagrams
 license:             BSD3
