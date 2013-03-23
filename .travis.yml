@@ -7,6 +7,7 @@ before_install:
   - git clone --quiet git://github.com/diagrams/diagrams-cairo.git diagrams/diagrams-cairo
   - git clone --quiet git://github.com/diagrams/diagrams-svg.git diagrams/diagrams-svg
   - git clone --quiet git://github.com/diagrams/diagrams-postscript.git diagrams/diagrams-postscript
+  - cabal update
   - cd diagrams
   - cabal install gtk2hs-buildtools
   - cabal install diagrams-core/ diagrams-lib/ diagrams-cairo/ diagrams-svg/ diagrams-postscript/
