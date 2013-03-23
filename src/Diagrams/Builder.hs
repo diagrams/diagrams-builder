@@ -1,8 +1,8 @@
-{-# LANGUAGE StandaloneDeriving
-           , DeriveDataTypeable
-           , ScopedTypeVariables
-           , FlexibleContexts
-  #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 -----------------------------------------------------------------------------
@@ -37,24 +37,31 @@ module Diagrams.Builder
 
        ) where
 
-import Diagrams.Builder.Modules
-import Diagrams.Builder.CmdLine
+import           Control.Monad                (guard, mplus)
+import           Control.Monad.Trans.Maybe    (runMaybeT)
+import           Crypto.Hash.MD5              (hash)
+import           Data.ByteString.Base16       (encode)
+import qualified Data.ByteString.Char8        as B
+import           Data.List                    (nub)
+import           Data.List.Split              (splitOn)
+import           Data.Maybe                   (catMaybes)
+import           Data.Typeable                (Typeable)
+import           System.Directory             (doesFileExist,
+                                               getDirectoryContents,
+                                               getTemporaryDirectory,
+                                               removeFile)
+import           System.FilePath              (takeBaseName, (<.>), (</>))
+import           System.IO                    (hClose, hPutStr, openTempFile)
 
-import Diagrams.Prelude hiding ((<.>), e)
+import           Language.Haskell.Exts        (ImportDecl, Module (..),
+                                               ModuleName (..), importModule,
+                                               prettyPrint)
+import           Language.Haskell.Interpreter hiding (ModuleName)
 
-import Language.Haskell.Exts (prettyPrint)
-import Language.Haskell.Interpreter hiding (ModuleName)
+import           Diagrams.Builder.CmdLine
+import           Diagrams.Builder.Modules
+import           Diagrams.Prelude             hiding (e, (<.>))
 
-import System.IO
-import System.FilePath
-import System.Directory
-
-import Crypto.Hash.MD5
-
-import qualified Data.ByteString.Char8 as B
-import Data.ByteString.Base16
-import Data.List (nub)
-import Data.Typeable
 deriving instance Typeable Any
 
 ------------------------------------------------------------
@@ -198,8 +205,9 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
          ("Diagrams.Prelude" : imps)
          source' of
     Left  err -> return (ParseErr err)
-    Right m   -> do
-      regen <- shouldRegen (prettyPrint m ++ dexp ++ show opts)
+    Right m@(Module _ _ _ _ _ srcImps _) -> do
+      liHashes <- getLocalImportHashes srcImps
+      regen    <- shouldRegen (prettyPrint m ++ dexp ++ show opts ++ concat liHashes)
       case regen of
         (info, Nothing)  -> return $ Skipped info
         (info, Just upd) -> do
@@ -212,6 +220,28 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
           compilation <- interpretDiagram b v (upd opts) tmp imps dexp
           removeFile tmp
           return $ either InterpErr (OK info) compilation
+
+-- | Take a list of imports, and return hashes of the contents of
+--   those imports which are local.  Note, this only finds imports
+--   which exist relative to the current directory, which is not as
+--   general as it probably should be --- we could be calling
+--   'buildDiagram' on source code which lives anywhere.
+getLocalImportHashes :: [ImportDecl] -> IO [String]
+getLocalImportHashes
+  = (fmap . map) hashStr
+  . fmap catMaybes
+  . mapM getLocal
+  . map (foldr1 (</>) . splitOn "." . getModuleName . importModule)
+
+-- | Given a relative path with no extension, like
+--   @\"Foo\/Bar\/Baz\"@, check whether such a file exists with either a
+--   @.hs@ or @.lhs@ extension; if so, return its contents.
+getLocal :: FilePath -> IO (Maybe String)
+getLocal m = runMaybeT $ tryExt "hs" `mplus` tryExt "lhs"
+  where
+    tryExt ext = do
+      let f = m <.> ext
+      liftIO (doesFileExist f) >>= guard >> liftIO (readFile f)
 
 -- | Convenience function suitable to be given as the final argument
 --   to 'buildDiagram'.  It implements the simple policy of always
@@ -249,8 +279,11 @@ hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                                         -- the diagram depends.
                  -> IO (String, Maybe (a -> a))
 hashedRegenerate upd dir src = do
-  let fileBase = B.unpack . encode . hash . B.pack $ src
+  let fileBase = hashStr src
   files <- getDirectoryContents dir
   case any ((fileBase==) . takeBaseName) files of
     True  -> return (fileBase, Nothing)
     False -> return (fileBase, Just (upd fileBase))
+
+hashStr :: String -> String
+hashStr = B.unpack . encode . hash . B.pack
