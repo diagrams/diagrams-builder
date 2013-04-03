@@ -39,8 +39,8 @@ module Diagrams.Builder
 
 import           Control.Monad                (guard, mplus)
 import           Control.Monad.Trans.Maybe    (runMaybeT)
-import           Crypto.Hash.MD5              (hash)
-import           Data.ByteString.Base16       (encode)
+import           Crypto.Hash                  (Digest, MD5,
+                                               digestToHexByteString, hash)
 import qualified Data.ByteString.Char8        as B
 import           Data.List                    (nub)
 import           Data.List.Split              (splitOn)
@@ -284,4 +284,4 @@ hashedRegenerate upd dir src = do
     False -> return (fileBase, Just (upd fileBase))
 
 hashStr :: String -> String
-hashStr = B.unpack . encode . hash . B.pack
+hashStr = B.unpack . digestToHexByteString . (hash :: B.ByteString -> Digest MD5) . B.pack
