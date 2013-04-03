@@ -52,9 +52,8 @@ library
                        directory,
                        filepath,
                        haskell-src-exts >= 1.13.1 && < 1.14,
-                       cryptohash >= 0.7.4 && < 0.9,
+                       cryptohash >= 0.8 && < 0.10,
                        bytestring >= 0.9.2 && < 0.11,
-                       base16-bytestring >= 0.1.1 && < 0.2,
                        cmdargs >= 0.6 && < 0.11
   hs-source-dirs:      src
   default-language:    Haskell2010

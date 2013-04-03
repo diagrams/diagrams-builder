@@ -49,10 +49,9 @@ import System.IO
 import System.FilePath
 import System.Directory
 
-import Crypto.Hash.MD5
+import Crypto.Hash (Digest, MD5, digestToHexByteString, hash)
 
 import qualified Data.ByteString.Char8 as B
-import Data.ByteString.Base16
 import Data.List (nub)
 import Data.Typeable
 deriving instance Typeable Any
@@ -248,8 +247,11 @@ hashedRegenerate :: (String -> a -> a)  -- ^ A function for computing
                                         -- the diagram depends.
                  -> IO (String, Maybe (a -> a))
 hashedRegenerate upd dir src = do
-  let fileBase = B.unpack . encode . hash . B.pack $ src
+  let fileBase = hashStr src
   files <- getDirectoryContents dir
   case any ((fileBase==) . takeBaseName) files of
     True  -> return (fileBase, Nothing)
     False -> return (fileBase, Just (upd fileBase))
+
+hashStr :: String -> String
+hashStr = B.unpack . digestToHexByteString . (hash :: B.ByteString -> Digest MD5) . B.pack
