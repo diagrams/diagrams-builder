@@ -1,3 +1,9 @@
+0.3.0.1 (3 April 2013)
+----------------------
+
+* depend on cryptohash >= 0.8 && < 0.10 (use new unified API)
+* remove base16-bytestring dependency
+
 0.3: 3 Feburary 2013
 --------------------
 
