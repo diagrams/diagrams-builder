@@ -37,8 +37,8 @@ module Diagrams.Builder
 
        ) where
 
-import           Control.Monad                (guard, mplus)
-import           Control.Monad.Trans.Maybe    (runMaybeT)
+import           Control.Monad                (guard, mplus, mzero)
+import           Control.Monad.Trans.Maybe    (MaybeT, runMaybeT)
 import           Crypto.Hash                  (Digest, MD5,
                                                digestToHexByteString, hash)
 import qualified Data.ByteString.Char8        as B
@@ -230,14 +230,25 @@ getLocalImportHashes :: [ImportDecl] -> IO [String]
 getLocalImportHashes
   = (fmap . map) hashStr
   . fmap catMaybes
-  . mapM getLocal
+  . mapM getLocalSource
   . map (foldr1 (</>) . splitOn "." . getModuleName . importModule)
+
+-- | Given a relative path with no extension, like
+--   @\"Foo\/Bar\/Baz\"@, check whether such a file exists with either
+--   a @.hs@ or @.lhs@ extension; if so, return its /pretty-printed/
+--   contents (removing all comments, canonicalizing formatting, /etc./).
+getLocalSource :: FilePath -> IO (Maybe String)
+getLocalSource f = runMaybeT $ do
+  contents <- getLocal f
+  case (doModuleParse . unLit) contents of
+    Left _  -> mzero
+    Right m -> return (prettyPrint m)
 
 -- | Given a relative path with no extension, like
 --   @\"Foo\/Bar\/Baz\"@, check whether such a file exists with either a
 --   @.hs@ or @.lhs@ extension; if so, return its contents.
-getLocal :: FilePath -> IO (Maybe String)
-getLocal m = runMaybeT $ tryExt "hs" `mplus` tryExt "lhs"
+getLocal :: FilePath -> MaybeT IO String
+getLocal m = tryExt "hs" `mplus` tryExt "lhs"
   where
     tryExt ext = do
       let f = m <.> ext
