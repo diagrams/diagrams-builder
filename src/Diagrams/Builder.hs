@@ -44,7 +44,7 @@ import           Crypto.Hash                  (Digest, MD5,
 import qualified Data.ByteString.Char8        as B
 import           Data.List                    (nub)
 import           Data.List.Split              (splitOn)
-import           Data.Maybe                   (catMaybes)
+import           Data.Maybe                   (catMaybes, fromMaybe)
 import           Data.Typeable                (Typeable)
 import           System.Directory             (doesFileExist,
                                                getDirectoryContents,
@@ -61,6 +61,8 @@ import           Language.Haskell.Interpreter hiding (ModuleName)
 import           Diagrams.Builder.CmdLine
 import           Diagrams.Builder.Modules
 import           Diagrams.Prelude             hiding (e, (<.>))
+import           System.Environment           (getEnvironment)
+import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
 
 deriving instance Typeable Any
 
@@ -97,6 +99,14 @@ setDiagramImports m imps = do
                  ]
                  ++ imps
 
+getHsenvArgv :: IO [String]
+getHsenvArgv = do
+  env <- getEnvironment
+  return $ case (lookup "HSENV" env) of
+             Nothing -> []
+             _       -> hsenvArgv
+                 where hsenvArgv = words $ fromMaybe "" (lookup "PACKAGE_DB_FOR_GHC" env)
+
 -- | Interpret a diagram expression based on the contents of a given
 --   source file, using some backend to produce a result.
 interpretDiagram
@@ -111,8 +121,9 @@ interpretDiagram
   -> [String]      -- ^ Additional imports needed
   -> String        -- ^ Expression of type @Diagram b v@ to be compiled
   -> IO (Either InterpreterError (Result b v))
-interpretDiagram b _ opts m imps dexp =
-    runInterpreter $ do
+interpretDiagram b _ opts m imps dexp = do
+    args <- liftIO getHsenvArgv
+    unsafeRunInterpreterWithArgs args $ do
       setDiagramImports m imps
       d <- interpret dexp (as :: Diagram b v)
       return (renderDia b opts d)
