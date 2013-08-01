@@ -1,3 +1,15 @@
+0.4: XXX
+--------
+
+* Add hsenv compatibility.
+* Big improvements in the way rebuilding is handled:
+    - Strip comments before deciding whether to rebuild, so
+      changing only comments does not trigger a rebuild
+    - Take local imports into account: if a diagram has an import
+      which corresponds to a local file, rebuild if that file has
+      changed
+    - Rebuild when options (e.g. size) change
+
 0.3.0.1 (3 April 2013)
 ----------------------
 
