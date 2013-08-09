@@ -1,5 +1,5 @@
-0.4: XXX
---------
+0.4: 9 August 2013
+------------------
 
 * Add hsenv compatibility.
 * Big improvements in the way rebuilding is handled:
