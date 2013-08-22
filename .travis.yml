@@ -15,6 +15,7 @@ before_install:
 
 script: cabal install -fcairo -fsvg -fps
 notifications:
+  email: false
   irc:
     channels:
       - irc.freenode.org#diagrams
