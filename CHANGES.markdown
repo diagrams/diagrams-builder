@@ -1,5 +1,11 @@
-0.4.0.3 (10 September 2013)
+0.4.0.4 (11 September 2013)
 ---------------------------
+
+    - fix compile error in diagrams-builder-svg executable
+    - require diagrams-svg >= 0.8
+
+0.4.0.3 (10 September 2013) [BROKEN]
+------------------------------------
 
     - allow diagrams-svg-0.8
 
