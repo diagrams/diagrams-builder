@@ -22,7 +22,7 @@ compileExample (Build{..}) = do
   res <- buildDiagram
            SVG
            zeroV
-           (SVGOptions (mkSizeSpec width height))
+           (SVGOptions (mkSizeSpec width height) Nothing)
            [f]
            expr
            []
