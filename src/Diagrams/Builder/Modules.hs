@@ -11,12 +11,13 @@
 
 module Diagrams.Builder.Modules where
 
-import Data.Function (on)
-import Data.List (foldl', isPrefixOf, groupBy, sortBy, nub)
-import Data.Ord  (comparing)
+import           Data.Function                (on)
+import           Data.List                    (foldl', groupBy, isPrefixOf, nub,
+                                               sortBy)
+import           Data.Ord                     (comparing)
 
-import Language.Haskell.Exts
-import Language.Haskell.Exts.SrcLoc (noLoc)
+import           Language.Haskell.Exts
+import           Language.Haskell.Exts.SrcLoc (noLoc)
 
 ------------------------------------------------------------
 -- Manipulating modules
@@ -52,9 +53,17 @@ emptyModule = Module noLoc (ModuleName "Main") [] Nothing Nothing [] []
 --   Haskell code, producing a @Module@ or an error message.
 doModuleParse :: String -> Either String Module
 doModuleParse src =
-  case parseFileContents src of
+  case parseFileContentsWithMode parseMode src of
     ParseFailed _ err -> Left err
     ParseOk m         -> return m
+  where
+    parseMode
+      = defaultParseMode
+        { baseLanguage = Haskell2010
+        , fixities = Just (preludeFixities ++ lensFixities)
+        }
+    lensFixities = infixl_ 1 ["&"]
+                ++ infixr_ 4 [".~", "%~"]
 
 -- | Remove all the literate comments and bird tracks from a literate
 --   Haskell file.  Has no effect on non-literate source.
@@ -116,4 +125,3 @@ combineModules (Module l1 n1 ps1 w1 e1 i1 d1)
 -- | Convert a @ModuleName@ to a @String@.
 getModuleName :: ModuleName -> String
 getModuleName (ModuleName n) = n
-
