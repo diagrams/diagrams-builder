@@ -60,10 +60,8 @@ doModuleParse src =
     parseMode
       = defaultParseMode
         { baseLanguage = Haskell2010
-        , fixities = Just (preludeFixities ++ lensFixities)
+        , fixities     = Nothing
         }
-    lensFixities = infixl_ 1 ["&"]
-                ++ infixr_ 4 [".~", "%~"]
 
 -- | Remove all the literate comments and bird tracks from a literate
 --   Haskell file.  Has no effect on non-literate source.
