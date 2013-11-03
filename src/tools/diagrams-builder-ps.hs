@@ -3,6 +3,7 @@
 
 module Main where
 
+import Control.Lens ((&), (.~))
 import System.Directory (createDirectoryIfMissing, copyFile)
 import qualified System.FilePath as FP
 
@@ -27,7 +28,7 @@ compileExample (Build{..}) = do
            []
            [ "Diagrams.Backend.Postscript" ]
            (hashedRegenerate
-             (\hash opts -> opts { psfileName = mkFile hash })
+             (\hash opts -> opts & psfileName .~ mkFile hash )
              dir
            )
 
