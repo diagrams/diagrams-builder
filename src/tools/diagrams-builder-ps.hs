@@ -3,7 +3,6 @@
 
 module Main where
 
-import Control.Lens ((&), (.~))
 import System.Directory (createDirectoryIfMissing, copyFile)
 import qualified System.FilePath as FP
 
