@@ -37,32 +37,34 @@ module Diagrams.Builder
 
        ) where
 
-import           Control.Monad                (guard, mplus, mzero)
-import           Control.Monad.Trans.Maybe    (MaybeT, runMaybeT)
-import           Crypto.Hash                  (Digest, MD5,
-                                               digestToHexByteString, hash)
-import qualified Data.ByteString.Char8        as B
-import           Data.List                    (nub)
-import           Data.List.Split              (splitOn)
-import           Data.Maybe                   (catMaybes, fromMaybe)
-import           Data.Typeable                (Typeable)
-import           System.Directory             (doesFileExist,
-                                               getDirectoryContents,
-                                               getTemporaryDirectory,
-                                               removeFile)
-import           System.FilePath              (takeBaseName, (<.>), (</>))
-import           System.IO                    (hClose, hPutStr, openTempFile)
+import           Control.Monad                       (guard, mplus, mzero)
+import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
+import           Crypto.Hash                         (Digest, MD5,
+                                                      digestToHexByteString,
+                                                      hash)
+import qualified Data.ByteString.Char8               as B
+import           Data.List                           (nub)
+import           Data.List.Split                     (splitOn)
+import           Data.Maybe                          (catMaybes, fromMaybe)
+import           Data.Typeable                       (Typeable)
+import           System.Directory                    (doesFileExist,
+                                                      getDirectoryContents,
+                                                      getTemporaryDirectory,
+                                                      removeFile)
+import           System.FilePath                     (takeBaseName, (<.>),
+                                                      (</>))
+import           System.IO                           (hClose, hPutStr,
+                                                      openTempFile)
 
-import           Language.Haskell.Exts        (ImportDecl, Module (..),
-                                               ModuleName (..), importModule,
-                                               prettyPrint)
-import           Language.Haskell.Interpreter hiding (ModuleName)
+import           Language.Haskell.Exts               (ImportDecl, Module (..),
+                                                      importModule, prettyPrint)
+import           Language.Haskell.Interpreter        hiding (ModuleName)
 
 import           Diagrams.Builder.CmdLine
 import           Diagrams.Builder.Modules
-import           Diagrams.Prelude             hiding (e, (<.>))
-import           System.Environment           (getEnvironment)
+import           Diagrams.Prelude                    hiding (e, (<.>))
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
+import           System.Environment                  (getEnvironment)
 
 deriving instance Typeable Any
 
@@ -298,9 +300,9 @@ hashedRegenerate
 
   -> IO (String, Maybe (a -> a))
 
-hashedRegenerate upd dir src = do
+hashedRegenerate upd d src = do
   let fileBase = hashStr src
-  files <- getDirectoryContents dir
+  files <- getDirectoryContents d
   case any ((fileBase==) . takeBaseName) files of
     True  -> return (fileBase, Nothing)
     False -> return (fileBase, Just (upd fileBase))

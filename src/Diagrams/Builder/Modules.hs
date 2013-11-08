@@ -83,7 +83,7 @@ deleteExports (Module l n p w _ i d) = Module l n p w Nothing i d
 addPragmas :: [String] -> Module -> Module
 addPragmas langs (Module l n p w e i d) = Module l n (f p) w e i d
   where f [] = [LanguagePragma noLoc (map Ident langs)]
-        f (LanguagePragma loc ps : rest) = LanguagePragma loc (ps ++ map Ident langs) : rest
+        f (LanguagePragma lpLoc ps : rest) = LanguagePragma lpLoc (ps ++ map Ident langs) : rest
         f (x : rest) = x : f rest
 
 -- | Add some imports to a module if necessary.
