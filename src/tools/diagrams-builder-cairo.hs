@@ -9,7 +9,6 @@ import Diagrams.Backend.Cairo.Internal -- due to GHC export bug in 7.4
 
 import Diagrams.Builder
 
-import Control.Lens ((&), (.~))
 import System.Directory (createDirectoryIfMissing, copyFile)
 import qualified System.FilePath as FP
 
