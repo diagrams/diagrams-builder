@@ -1,19 +1,32 @@
 language: haskell
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq libgtk-3-dev libcairo2-dev
-  - git clone --quiet git://github.com/diagrams/diagrams-core.git diagrams/diagrams-core
-  - git clone --quiet git://github.com/diagrams/diagrams-lib.git diagrams/diagrams-lib
-  - git clone --quiet git://github.com/diagrams/diagrams-cairo.git diagrams/diagrams-cairo
-  - git clone --quiet git://github.com/diagrams/diagrams-svg.git diagrams/diagrams-svg
-  - git clone --quiet git://github.com/diagrams/diagrams-postscript.git diagrams/diagrams-postscript
-  - cabal update
-  - cd diagrams
-  - cabal install gtk2hs-buildtools
-  - cabal install diagrams-core/ diagrams-lib/ diagrams-cairo/ diagrams-svg/ diagrams-postscript/
-  - cd ..
 
-script: cabal install -fcairo -fsvg -fps
+env:
+  matrix:
+    - HPVER=2012.4.0.0
+    - HPVER=2013.2.0.0
+    - GHCVER=7.4.2
+    - GHCVER=7.6.3
+    - GHCVER=head
+  global:
+    - CABALVER=1.16
+    - UBUNTU_PKGS="libgtk-3-dev libcairo2-dev"
+    - EXTRA_DEPS_PRE="gtk2hs-buildtools"
+    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript"
+    - CABAL_FLAGS="-fcairo -fsvg -fps"
+
+matrix:
+  allow_failures:
+    - env: GHCVER=head
+
+before_install:
+  - git clone http://github.com/diagrams/diagrams-travis travis
+  - source travis/scripts/set_env.sh
+  - ./travis/scripts/before_install.sh
+
+install: ./travis/scripts/install.sh
+
+script: ./travis/scripts/script.sh
+
 notifications:
   email: false
   irc:
