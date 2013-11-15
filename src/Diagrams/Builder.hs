@@ -3,7 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans  #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -62,7 +62,7 @@ import           Language.Haskell.Interpreter        hiding (ModuleName)
 
 import           Diagrams.Builder.CmdLine
 import           Diagrams.Builder.Modules
-import           Diagrams.Prelude                    hiding (e, (<.>))
+import           Diagrams.Prelude                    ((<.>))
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
 import           System.Environment                  (getEnvironment)
 
