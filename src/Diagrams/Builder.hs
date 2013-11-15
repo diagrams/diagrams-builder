@@ -62,7 +62,7 @@ import           Language.Haskell.Interpreter        hiding (ModuleName)
 
 import           Diagrams.Builder.CmdLine
 import           Diagrams.Builder.Modules
-import           Diagrams.Prelude                    ((<.>))
+import           Diagrams.Prelude                    hiding ((<.>))
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
 import           System.Environment                  (getEnvironment)
 
