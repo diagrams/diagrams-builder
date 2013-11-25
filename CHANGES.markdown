@@ -1,3 +1,9 @@
+0.4.1 (24 November 2013)
+------------------------
+
+	- bug fix: avoid ambiguity errors when parsing unknown operators
+    - update to work with diagrams-1.0
+
 0.4.0.6 (2 October 2013)
 ------------------------
 
