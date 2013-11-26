@@ -1,3 +1,9 @@
+0.4.2 (26 November 2013)
+------------------------
+
+    - `buildDiagram` now accepts expressions of type `Diagram` or `IO
+      Diagram`: it just tries both.
+
 0.4.1 (24 November 2013)
 ------------------------
 
