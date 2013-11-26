@@ -3,6 +3,7 @@
 
     - `buildDiagram` now accepts expressions of type `Diagram` or `IO
       Diagram`: it just tries both.
+    - Add dependency on `mtl`.
 
 0.4.1 (24 November 2013)
 ------------------------
