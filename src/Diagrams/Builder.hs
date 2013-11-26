@@ -38,6 +38,7 @@ module Diagrams.Builder
        ) where
 
 import           Control.Monad                       (guard, mplus, mzero)
+import           Control.Monad.Error                 (catchError)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
 import           Crypto.Hash                         (Digest, MD5,
                                                       digestToHexByteString,
@@ -110,7 +111,8 @@ getHsenvArgv = do
                  where hsenvArgv = words $ fromMaybe "" (lookup "PACKAGE_DB_FOR_GHC" env)
 
 -- | Interpret a diagram expression based on the contents of a given
---   source file, using some backend to produce a result.
+--   source file, using some backend to produce a result.  The
+--   expression can be of type @Diagram b v@ or @IO (Diagram b v)@.
 interpretDiagram
   :: forall b v.
      ( Typeable b, Typeable v
@@ -127,7 +129,7 @@ interpretDiagram b _ opts m imps dexp = do
     args <- liftIO getHsenvArgv
     unsafeRunInterpreterWithArgs args $ do
       setDiagramImports m imps
-      d <- interpret dexp (as :: Diagram b v)
+      d <- interpret dexp (as :: Diagram b v) `catchError` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
       return (renderDia b opts d)
 
 -- | Pretty-print an @InterpreterError@.
@@ -153,8 +155,9 @@ data BuildResult b v x =
                                   --   some extra information.
 
 -- | Build a diagram by writing the given source code to a temporary
---   module and interpreting the given expression.  Can return either
---   a parse error if the source does not parse, an interpreter error,
+--   module and interpreting the given expression, which can be of
+--   type @Diagram b v@ or @IO (Diagram b v)@.  Can return either a
+--   parse error if the source does not parse, an interpreter error,
 --   or the final result.
 buildDiagram
   :: ( Typeable b, Typeable v
