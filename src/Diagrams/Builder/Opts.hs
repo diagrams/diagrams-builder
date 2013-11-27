@@ -18,15 +18,24 @@
 -----------------------------------------------------------------------------
 module Diagrams.Builder.Opts
     (
-      BuildOpts(..), backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
+      BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
     )
     where
 
-import           Control.Lens     (Lens', generateSignatures, lensRules,
+import           Control.Lens     (Lens, Lens', generateSignatures, lensRules,
                                    makeLensesWith, (&), (.~))
 
 import           Diagrams.Prelude (Diagram, Options)
 
+-- | Options to control the behavior of @buildDiagram@.  Create one
+--   with 'mkBuildOpts' followed by using the provided lenses to
+--   override more fields; for example,
+--
+-- @
+--   mkBuildOpts SVG zeroV (Options ...)
+--     & imports .~ [\"Foo.Bar\", \"Baz.Quux\"]
+--     & diaExpr .~ \"square 6 # fc green\"
+-- @
 data BuildOpts b v x
   = BuildOpts
     { backendToken :: b
@@ -41,6 +50,23 @@ data BuildOpts b v x
     , _diaExpr     :: String
     , _postProcess :: Diagram b v -> Diagram b v
     }
+
+-- | Create a @BuildOpts@ record with default options:
+--
+--   * no snippets
+--
+--   * no pragmas
+--
+--   * no imports
+--
+--   * always regenerate
+--
+--   * the diagram expression @circle 1@
+--
+--   * no postprocessing
+mkBuildOpts :: b -> v -> Options b v -> BuildOpts b v ()
+mkBuildOpts b v opts
+  = BuildOpts b v opts [] [] [] (const (return ((), Just id))) "circle 1" id
 
 makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
 
@@ -81,7 +107,9 @@ imports :: Lens' (BuildOpts b v x) [String]
 --   and always decides to regenerate the diagram;
 --   'hashedRegenerate' creates a hash of the diagram source and
 --   looks for a file with that name in a given directory.
-decideRegen :: Lens' (BuildOpts b v x) (String -> IO (x, Maybe (Options b v -> Options b v)))
+decideRegen :: Lens (BuildOpts b v x) (BuildOpts b v x')
+                    (String -> IO (x, Maybe (Options b v -> Options b v)))
+                    (String -> IO (x', Maybe (Options b v -> Options b v)))
 
 -- | The diagram expression to interpret.  All the given import sand
 --   snippets will be in scope, with the given LANGUAGE pragmas

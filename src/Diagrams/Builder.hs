@@ -21,7 +21,7 @@ module Diagrams.Builder
        ( -- * Building diagrams
 
          -- ** Options
-         BuildOpts(..), backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
+         BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
 
          -- ** Building
        , buildDiagram, BuildResult(..)
