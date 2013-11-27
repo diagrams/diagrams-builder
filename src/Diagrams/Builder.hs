@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 
 -----------------------------------------------------------------------------
@@ -19,7 +20,11 @@
 module Diagrams.Builder
        ( -- * Building diagrams
 
-         buildDiagram, BuildResult(..)
+         -- ** Options
+         BuildOpts(..), backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
+
+         -- ** Building
+       , buildDiagram, BuildResult(..)
        , ppInterpError
 
          -- ** Regeneration decision functions
@@ -37,6 +42,7 @@ module Diagrams.Builder
 
        ) where
 
+import           Control.Lens                        ((^.))
 import           Control.Monad                       (guard, mplus, mzero)
 import           Control.Monad.Error                 (catchError)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
@@ -63,6 +69,7 @@ import           Language.Haskell.Interpreter        hiding (ModuleName)
 
 import           Diagrams.Builder.CmdLine
 import           Diagrams.Builder.Modules
+import           Diagrams.Builder.Opts
 import           Diagrams.Prelude                    hiding ((<.>))
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
 import           System.Environment                  (getEnvironment)
@@ -114,23 +121,30 @@ getHsenvArgv = do
 --   source file, using some backend to produce a result.  The
 --   expression can be of type @Diagram b v@ or @IO (Diagram b v)@.
 interpretDiagram
-  :: forall b v.
+  :: forall b v x.
      ( Typeable b, Typeable v
      , InnerSpace v, OrderedField (Scalar v), Backend b v
      )
-  => b             -- ^ Backend token
-  -> v             -- ^ Dummy vector to identify the vector space
-  -> Options b v   -- ^ Rendering options
-  -> FilePath      -- ^ Filename of the module containing the example
-  -> [String]      -- ^ Additional imports needed
-  -> String        -- ^ Expression of type @Diagram b v@ to be compiled
+  => BuildOpts b v x
+  -> FilePath
   -> IO (Either InterpreterError (Result b v))
-interpretDiagram b _ opts m imps dexp = do
-    args <- liftIO getHsenvArgv
-    unsafeRunInterpreterWithArgs args $ do
-      setDiagramImports m imps
-      d <- interpret dexp (as :: Diagram b v) `catchError` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
-      return (renderDia b opts d)
+interpretDiagram bopts m = do
+
+  -- use an hsenv sandbox, if one is enabled.
+  args <- liftIO getHsenvArgv
+  unsafeRunInterpreterWithArgs args $ do
+
+    setDiagramImports m (bopts ^. imports)
+    let dexp = bopts ^. diaExpr
+
+    -- Try interpreting the diagram expression at two types: Diagram
+    -- b v and IO (Diagram b v).  Take whichever one typechecks,
+    -- running the IO action in the second case to produce a
+    -- diagram.
+    d <- interpret dexp (as :: Diagram b v) `catchError` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
+
+    -- Finally, call renderDia.
+    return $ renderDia (backendToken bopts) (bopts ^. backendOpts) d
 
 -- | Pretty-print an @InterpreterError@.
 ppInterpError :: InterpreterError -> String
@@ -164,66 +178,17 @@ buildDiagram
      , InnerSpace v, OrderedField (Scalar v), Backend b v
      , Show (Options b v)
      )
-  => b
-     -- ^ Backend token
-
-  -> v
-     -- ^ Dummy vector to fix the vector type
-
-  -> Options b v
-     -- ^ Backend-specific options to use
-
-  -> [String]
-     -- ^ Source code snippets.  Each should be a syntactically valid
-     --   Haskell module.  They will be combined intelligently, /i.e./
-     --   not just pasted together textually but combining pragmas,
-     --   imports, /etc./ separately.
-
-  -> String
-     -- ^ Diagram expression to interpret
-
-  -> [String]
-     -- ^ Extra @LANGUAGE@ pragmas to use (@NoMonomorphismRestriction@
-     --   is used by default.)
-
-  -> [String]
-     -- ^ Additional imports ("Diagrams.Prelude" is imported by
-     --   default).
-
-  -> (String -> IO (x, Maybe (Options b v -> Options b v)))
-     -- ^ A function to decide whether a particular diagram needs to
-     --   be regenerated.  It will be passed the final assembled
-     --   source for the diagram (but with the module name set to
-     --   @Main@ instead of something auto-generated, so that hashing
-     --   the source will produce consistent results across runs). It
-     --   can return some information (such as a hash of the source)
-     --   via the @x@ result, which will be passed through to the
-     --   result of 'buildDiagram'.  More importantly, it decides
-     --   whether the diagram should be built: a result of 'Just'
-     --   means the diagram /should/ be built; 'Nothing' means it
-     --   should not. In the case that it should be built, it returns
-     --   a function for updating the rendering options.  This could
-     --   be used, /e.g./, to request a filename based on a hash of
-     --   the source.
-     --
-     --   Two standard decision functions are provided for
-     --   convenience: 'alwaysRegenerate' returns no extra information
-     --   and always decides to regenerate the diagram;
-     --   'hashedRegenerate' creates a hash of the diagram source and
-     --   looks for a file with that name in a given directory.
-
-  -> IO (BuildResult b v x)
-buildDiagram b v opts source dexp langs imps shouldRegen = do
-  let source'   = map unLit source
-  case createModule
-         Nothing
-         ("NoMonomorphismRestriction" : langs)
-         ("Diagrams.Prelude" : imps)
-         source' of
+  => BuildOpts b v x -> IO (BuildResult b v x)
+buildDiagram bopts = do
+  let bopts' = bopts
+             & snippets %~ map unLit
+             & pragmas  %~ ("NoMonomorphismRestriction" :)
+             & imports  %~ ("Diagrams.Prelude" :)
+  case createModule Nothing bopts' of
     Left  err -> return (ParseErr err)
     Right m@(Module _ _ _ _ _ srcImps _) -> do
       liHashes <- getLocalImportHashes srcImps
-      regen    <- shouldRegen (prettyPrint m ++ dexp ++ show opts ++ concat liHashes)
+      regen    <- (bopts ^. decideRegen) (prettyPrint m ++ (bopts ^. diaExpr) ++ show (bopts ^. backendOpts) ++ concat liHashes)
       case regen of
         (info, Nothing)  -> return $ Skipped info
         (info, Just upd) -> do
@@ -233,7 +198,7 @@ buildDiagram b v opts source dexp langs imps shouldRegen = do
           hPutStr h (prettyPrint m')
           hClose h
 
-          compilation <- interpretDiagram b v (upd opts) tmp imps dexp
+          compilation <- interpretDiagram (bopts' & backendOpts %~ upd) tmp
           removeFile tmp
           return $ either InterpErr (OK info) compilation
 
