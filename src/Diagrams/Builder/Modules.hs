@@ -35,7 +35,7 @@ import           Diagrams.Builder.Opts
 --   Returns the updated module, or an error message if parsing
 --   failed.
 createModule :: Maybe String -- ^ Module name to use
-             -> BuildOpts b v x
+             -> BuildOpts b v
              -> Either String Module
 createModule nm opts = do
   ms <- mapM doModuleParse (opts ^. snippets)

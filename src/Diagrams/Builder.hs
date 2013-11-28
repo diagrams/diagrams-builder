@@ -23,12 +23,12 @@ module Diagrams.Builder
          -- ** Options
          BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
 
+         -- ** Regeneration decision functions
+       , alwaysRegenerate, hashedRegenerate
+
          -- ** Building
        , buildDiagram, BuildResult(..)
        , ppInterpError
-
-         -- ** Regeneration decision functions
-       , alwaysRegenerate, hashedRegenerate
 
          -- * Interpreting diagrams
          -- $interp
@@ -46,16 +46,12 @@ import           Control.Lens                        ((^.))
 import           Control.Monad                       (guard, mplus, mzero)
 import           Control.Monad.Error                 (catchError)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
-import           Crypto.Hash                         (Digest, MD5,
-                                                      digestToHexByteString,
-                                                      hash)
-import qualified Data.ByteString.Char8               as B
-import           Data.List                           (nub)
+import           Data.Hashable                       (Hashable (..))
+import           Data.List                           (foldl', nub)
 import           Data.List.Split                     (splitOn)
 import           Data.Maybe                          (catMaybes, fromMaybe)
 import           Data.Typeable                       (Typeable)
 import           System.Directory                    (doesFileExist,
-                                                      getDirectoryContents,
                                                       getTemporaryDirectory,
                                                       removeFile)
 import           System.FilePath                     (takeBaseName, (<.>),
@@ -121,11 +117,11 @@ getHsenvArgv = do
 --   source file, using some backend to produce a result.  The
 --   expression can be of type @Diagram b v@ or @IO (Diagram b v)@.
 interpretDiagram
-  :: forall b v x.
+  :: forall b v.
      ( Typeable b, Typeable v
      , InnerSpace v, OrderedField (Scalar v), Backend b v
      )
-  => BuildOpts b v x
+  => BuildOpts b v
   -> FilePath
   -> IO (Either InterpreterError (Result b v))
 interpretDiagram bopts m = do
@@ -158,15 +154,14 @@ ppInterpError (GhcException err) = "GhcException: " ++ err
 ------------------------------------------------------------
 
 -- | Potential results of a dynamic diagram building operation.
-data BuildResult b v x =
+data BuildResult b v =
     ParseErr  String              -- ^ Parsing of the code failed.
   | InterpErr InterpreterError    -- ^ Interpreting the code
                                   --   failed. See 'ppInterpError'.
-  | Skipped x                     -- ^ This diagram did not need to be
-                                  --   regenerated.
-  | OK x (Result b v)             -- ^ A successful build, yielding a
-                                  --   backend-specific result and
-                                  --   some extra information.
+  | Skipped Hash                  -- ^ This diagram did not need to be
+                                  --   regenerated; includes the hash.
+  | OK Hash (Result b v)          -- ^ A successful build, yielding the
+                                  --   hash and a backend-specific result.
 
 -- | Build a diagram by writing the given source code to a temporary
 --   module and interpreting the given expression, which can be of
@@ -176,9 +171,9 @@ data BuildResult b v x =
 buildDiagram
   :: ( Typeable b, Typeable v
      , InnerSpace v, OrderedField (Scalar v), Backend b v
-     , Show (Options b v)
+     , Hashable (Options b v)
      )
-  => BuildOpts b v x -> IO (BuildResult b v x)
+  => BuildOpts b v -> IO (BuildResult b v)
 buildDiagram bopts = do
   let bopts' = bopts
              & snippets %~ map unLit
@@ -187,11 +182,16 @@ buildDiagram bopts = do
   case createModule Nothing bopts' of
     Left  err -> return (ParseErr err)
     Right m@(Module _ _ _ _ _ srcImps _) -> do
-      liHashes <- getLocalImportHashes srcImps
-      regen    <- (bopts ^. decideRegen) (prettyPrint m ++ (bopts ^. diaExpr) ++ show (bopts ^. backendOpts) ++ concat liHashes)
+      liHash <- hashLocalImports srcImps
+      let diaHash
+            = 0 `hashWithSalt` prettyPrint m
+                `hashWithSalt` (bopts ^. diaExpr)
+                `hashWithSalt` (bopts ^. backendOpts)
+                `hashWithSalt` liHash
+      regen    <- (bopts ^. decideRegen) diaHash
       case regen of
-        (info, Nothing)  -> return $ Skipped info
-        (info, Just upd) -> do
+        Nothing  -> return $ Skipped diaHash
+        Just upd -> do
           tmpDir   <- getTemporaryDirectory
           (tmp, h) <- openTempFile tmpDir ("Diagram.hs")
           let m' = replaceModuleName (takeBaseName tmp) m
@@ -200,17 +200,16 @@ buildDiagram bopts = do
 
           compilation <- interpretDiagram (bopts' & backendOpts %~ upd) tmp
           removeFile tmp
-          return $ either InterpErr (OK info) compilation
+          return $ either InterpErr (OK diaHash) compilation
 
--- | Take a list of imports, and return hashes of the contents of
+-- | Take a list of imports, and return a hash of the contents of
 --   those imports which are local.  Note, this only finds imports
 --   which exist relative to the current directory, which is not as
 --   general as it probably should be --- we could be calling
 --   'buildDiagram' on source code which lives anywhere.
-getLocalImportHashes :: [ImportDecl] -> IO [String]
-getLocalImportHashes
-  = (fmap . map) hashStr
-  . fmap catMaybes
+hashLocalImports :: [ImportDecl] -> IO Hash
+hashLocalImports
+  = fmap (foldl' hashWithSalt 0 . catMaybes)
   . mapM getLocalSource
   . map (foldr1 (</>) . splitOn "." . getModuleName . importModule)
 
@@ -234,46 +233,3 @@ getLocal m = tryExt "hs" `mplus` tryExt "lhs"
     tryExt ext = do
       let f = m <.> ext
       liftIO (doesFileExist f) >>= guard >> liftIO (readFile f)
-
--- | Convenience function suitable to be given as the final argument
---   to 'buildDiagram'.  It implements the simple policy of always
---   rebuilding every diagram.
-alwaysRegenerate :: String -> IO ((), Maybe (a -> a))
-alwaysRegenerate _ = return ((), Just id)
-
--- | Convenience function suitable to be given as the final argument
---   to 'buildDiagram'.  It works by hashing the given diagram source,
---   and looking in the specified directory for any file whose base
---   name is equal to the hash.  If there is such a file, it specifies
---   that the diagram should not be rebuilt.  Otherwise, it specifies
---   that the diagram should be rebuilt, and uses the provided
---   function to update the rendering options based on the generated
---   hash.  (Most likely, one would want to set the requested output
---   file to the hash followed by some extension.)  It also returns
---   the generated hash.
-hashedRegenerate
-  :: (String -> a -> a)
-     -- ^ A function for computing an update to rendering options,
-     --   given a new base filename computed from a hash of the
-     --   diagram source.
-
-  -> FilePath
-     -- ^ The directory in which to look for generated files
-
-  -> String
-     -- ^ The \"source\" to hash. Note that this does not actually
-     -- have to be valid source code.  A common trick is to
-     -- concatenate the actual source code with String representations
-     -- of any other information on which the diagram depends.
-
-  -> IO (String, Maybe (a -> a))
-
-hashedRegenerate upd d src = do
-  let fileBase = hashStr src
-  files <- getDirectoryContents d
-  case any ((fileBase==) . takeBaseName) files of
-    True  -> return (fileBase, Nothing)
-    False -> return (fileBase, Just (upd fileBase))
-
-hashStr :: String -> String
-hashStr = B.unpack . digestToHexByteString . (hash :: B.ByteString -> Digest MD5) . B.pack
