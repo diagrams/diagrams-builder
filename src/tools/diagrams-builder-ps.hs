@@ -1,16 +1,17 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Main where
 
-import System.Directory (createDirectoryIfMissing, copyFile)
-import qualified System.FilePath as FP
+import           System.Directory            (copyFile,
+                                              createDirectoryIfMissing)
+import qualified System.FilePath             as FP
 
-import System.Console.CmdArgs
+import           System.Console.CmdArgs
 
-import Diagrams.Prelude hiding (width, height)
-import Diagrams.Backend.Postscript
-import Diagrams.Builder
+import           Diagrams.Backend.Postscript
+import           Diagrams.Builder
+import           Diagrams.Prelude            hiding (height, width)
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
@@ -18,25 +19,25 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  res <- buildDiagram
-           Postscript
-           zeroV
-           (PostscriptOptions outFile (mkSizeSpec width height) EPS)
-           [f]
-           expr
-           []
-           [ "Diagrams.Backend.Postscript" ]
-           (hashedRegenerate
-             (\hash opts -> opts & psfileName .~ mkFile hash )
-             dir
-           )
+  let bopts = mkBuildOpts Postscript zeroV (PostscriptOptions outFile (mkSizeSpec width height) EPS)
+                & snippets .~ [f]
+                & imports  .~ [ "Diagrams.Backend.Postscript" ]
+                & diaExpr  .~ expr
+                & decideRegen .~
+                    (hashedRegenerate
+                      (\hash opts -> opts & psfileName .~ mkFile hash )
+                      dir
+                    )
+
+
+  res <- buildDiagram bopts
 
   case res of
     ParseErr err    -> putStrLn ("Parse error in " ++ srcFile) >> putStrLn err
     InterpErr ierr  -> putStrLn ("Error while compiling " ++ srcFile) >>
                        putStrLn (ppInterpError ierr)
-    Skipped hash    -> copyFile (mkFile hash) outFile
-    OK hash act     -> do act >> copyFile (mkFile hash) outFile
+    Skipped hash    -> copyFile (mkFile (hashToHexStr hash)) outFile
+    OK hash act     -> do act >> copyFile (mkFile (hashToHexStr hash)) outFile
  where
    mkFile base = dir FP.</> base FP.<.> "eps"
 
