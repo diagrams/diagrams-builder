@@ -23,8 +23,9 @@ module Diagrams.Builder
          -- ** Options
          BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
 
-         -- ** Regeneration decision functions
+         -- ** Regeneration decision functions and hashing
        , alwaysRegenerate, hashedRegenerate
+       , hashToHexStr
 
          -- ** Building
        , buildDiagram, BuildResult(..)
