@@ -141,7 +141,7 @@ interpretDiagram bopts m = do
     d <- interpret dexp (as :: Diagram b v) `catchError` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
 
     -- Finally, call renderDia.
-    return $ renderDia (backendToken bopts) (bopts ^. backendOpts) d
+    return $ renderDia (backendToken bopts) (bopts ^. backendOpts) ((bopts ^. postProcess) d)
 
 -- | Pretty-print an @InterpreterError@.
 ppInterpError :: InterpreterError -> String
