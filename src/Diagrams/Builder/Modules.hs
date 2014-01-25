@@ -11,6 +11,7 @@
 
 module Diagrams.Builder.Modules where
 
+import           Control.Lens                 ((^.))
 import           Data.Function                (on)
 import           Data.List                    (foldl', groupBy, isPrefixOf, nub,
                                                sortBy)
@@ -18,6 +19,8 @@ import           Data.Ord                     (comparing)
 
 import           Language.Haskell.Exts
 import           Language.Haskell.Exts.SrcLoc (noLoc)
+
+import           Diagrams.Builder.Opts
 
 ------------------------------------------------------------
 -- Manipulating modules
@@ -32,17 +35,15 @@ import           Language.Haskell.Exts.SrcLoc (noLoc)
 --   Returns the updated module, or an error message if parsing
 --   failed.
 createModule :: Maybe String -- ^ Module name to use
-             -> [String]     -- ^ @LANGUAGE@ pragmas to add
-             -> [String]     -- ^ Imports to add
-             -> [String]     -- ^ Source code
+             -> BuildOpts b v
              -> Either String Module
-createModule nm langs imps srcs = do
-  ms <- mapM doModuleParse srcs
+createModule nm opts = do
+  ms <- mapM doModuleParse (opts ^. snippets)
   return
     . deleteExports
     . maybe id replaceModuleName nm
-    . addPragmas langs
-    . addImports imps
+    . addPragmas (opts ^. pragmas)
+    . addImports (opts ^. imports)
     . foldl' combineModules emptyModule
     $ ms
 

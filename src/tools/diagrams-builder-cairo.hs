@@ -1,18 +1,19 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Main where
 
-import Diagrams.Prelude hiding (width, height)
-import Diagrams.Backend.Cairo
-import Diagrams.Backend.Cairo.Internal -- due to GHC export bug in 7.4
+import           Diagrams.Backend.Cairo
+import           Diagrams.Backend.Cairo.Internal
+import           Diagrams.Prelude                hiding (height, width)
 
-import Diagrams.Builder
+import           Diagrams.Builder
 
-import System.Directory (createDirectoryIfMissing, copyFile)
-import qualified System.FilePath as FP
+import           System.Directory                (copyFile,
+                                                  createDirectoryIfMissing)
+import qualified System.FilePath                 as FP
 
-import System.Console.CmdArgs
+import           System.Console.CmdArgs
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
@@ -28,24 +29,23 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  res <- buildDiagram
-           Cairo
-           zeroV
-           (CairoOptions outFile (mkSizeSpec width height) fmt False)
-           [f]
-           expr
-           []
-           [ "Diagrams.Backend.Cairo" ]
-           (hashedRegenerate
-             (\hash opts -> opts & cairoFileName .~ mkFile hash ext)
-             dir
-           )
+  let bopts = mkBuildOpts Cairo zeroV (CairoOptions outFile (mkSizeSpec width height) fmt False)
+                & snippets .~ [f]
+                & imports  .~ [ "Diagrams.Backend.Cairo" ]
+                & diaExpr  .~ expr
+                & decideRegen
+                  .~ (hashedRegenerate
+                       (\base opts -> opts & cairoFileName .~ mkFile base ext)
+                       dir
+                     )
+
+  res <- buildDiagram bopts
   case res of
     ParseErr err    -> putStrLn ("Parse error in " ++ srcFile) >> putStrLn err
     InterpErr ierr  -> putStrLn ("Error while compiling " ++ srcFile) >>
                        putStrLn (ppInterpError ierr)
-    Skipped hash    -> copyFile (mkFile hash ext) outFile
-    OK hash (act,_) -> act >> copyFile (mkFile hash ext) outFile
+    Skipped hash    -> copyFile (mkFile (hashToHexStr hash) ext) outFile
+    OK hash (act,_) -> act >> copyFile (mkFile (hashToHexStr hash) ext) outFile
  where
   mkFile base ext = dir FP.</> base FP.<.> ext
 

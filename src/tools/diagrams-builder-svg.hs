@@ -1,16 +1,17 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Main where
 
 import           Diagrams.Backend.SVG
 import           Diagrams.Builder
-import           Diagrams.Prelude hiding (width, height)
+import           Diagrams.Prelude             hiding (height, width)
 
-import qualified Data.ByteString.Lazy as BS
+import qualified Data.ByteString.Lazy         as BS
 import           System.Console.CmdArgs
-import           System.Directory (createDirectoryIfMissing, copyFile)
-import qualified System.FilePath as FP
+import           System.Directory             (copyFile,
+                                               createDirectoryIfMissing)
+import qualified System.FilePath              as FP
 import           Text.Blaze.Svg.Renderer.Utf8 (renderSvg)
 
 compileExample :: Build -> IO ()
@@ -19,22 +20,20 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  res <- buildDiagram
-           SVG
-           zeroV
-           (SVGOptions (mkSizeSpec width height) Nothing)
-           [f]
-           expr
-           []
-           [ "Diagrams.Backend.SVG" ]
-           (hashedRegenerate (\_ opts -> opts) dir)
+  let bopts = mkBuildOpts SVG zeroV (SVGOptions (mkSizeSpec width height) Nothing)
+                & snippets .~ [f]
+                & imports  .~ [ "Diagrams.Backend.SVG" ]
+                & diaExpr  .~ expr
+                & decideRegen .~ (hashedRegenerate (\_ opts -> opts) dir)
+
+  res <- buildDiagram bopts
 
   case res of
     ParseErr err    -> putStrLn ("Parse error in " ++ srcFile) >> putStrLn err
     InterpErr ierr  -> putStrLn ("Error while compiling " ++ srcFile) >>
                        putStrLn (ppInterpError ierr)
-    Skipped hash    -> copyFile (mkFile hash) outFile
-    OK hash svg     -> do let cached = mkFile hash
+    Skipped hash    -> copyFile (mkFile (hashToHexStr hash)) outFile
+    OK hash svg     -> do let cached = mkFile (hashToHexStr hash)
                           BS.writeFile cached (renderSvg svg)
                           copyFile cached outFile
  where
