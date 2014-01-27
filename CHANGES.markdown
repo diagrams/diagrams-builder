@@ -1,3 +1,11 @@
+0.5 (27 January 2014)
+---------------------
+
+    - Consolidate buildDiagram arguments into a single record of
+      arguments.
+    - Add a `postProcess` argument, a function to be applied to the
+      interpreted diagram.
+
 0.4.2 (26 November 2013)
 ------------------------
 
