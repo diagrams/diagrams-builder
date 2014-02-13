@@ -49,7 +49,7 @@ library
                        Diagrams.Builder.CmdLine
   build-depends:       base >=4.2 && < 4.7,
                        mtl >= 2.1 && < 2.2,
-                       diagrams-lib >=0.6 && < 1.1,
+                       diagrams-lib >=0.6 && < 1.2,
                        hint ==0.3.*,
                        directory,
                        filepath,
