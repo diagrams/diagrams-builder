@@ -1,5 +1,5 @@
 name:                diagrams-builder
-version:             0.5.0.1
+version:             0.5.0.2
 synopsis:            hint-based build service for the diagrams graphics EDSL.
 
 description:         @diagrams-builder@ provides backend-agnostic tools for
