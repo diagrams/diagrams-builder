@@ -97,8 +97,8 @@ executable diagrams-builder-cairo
                        filepath,
                        directory,
                        diagrams-builder,
-                       diagrams-lib >= 0.6 && < 1.1,
-                       diagrams-cairo >= 0.6 && < 1.1,
+                       diagrams-lib >= 0.6 && < 1.2,
+                       diagrams-cairo >= 0.6 && < 1.2,
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.8 && < 3.11
 
@@ -117,7 +117,7 @@ executable diagrams-builder-svg
                        filepath,
                        directory,
                        diagrams-builder,
-                       diagrams-lib >= 0.6 && < 1.1,
+                       diagrams-lib >= 0.6 && < 1.2,
                        diagrams-svg >= 0.8.0.1 && < 1.1,
                        blaze-svg >= 0.3.3 && < 0.4,
                        bytestring >= 0.9.2 && < 0.11,
@@ -138,7 +138,7 @@ executable diagrams-builder-ps
                        filepath,
                        directory,
                        diagrams-builder,
-                       diagrams-lib >= 0.6 && < 1.1,
+                       diagrams-lib >= 0.6 && < 1.2,
                        diagrams-postscript >= 0.6 && < 1.1,
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.8 && < 3.11
