@@ -50,7 +50,7 @@ library
   build-depends:       base >=4.2 && < 4.8,
                        mtl >= 2.1 && < 2.2,
                        diagrams-lib >=0.6 && < 1.2,
-                       hint ==0.3.*,
+                       hint >= 0.4 && < 0.5,
                        directory,
                        filepath,
                        transformers >= 0.3 && < 0.4,
@@ -58,7 +58,8 @@ library
                        haskell-src-exts >= 1.14 && < 1.15,
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.9 && < 4.1,
-                       hashable >= 1.1 && < 1.3
+                       hashable >= 1.1 && < 1.3,
+                       exceptions >= 0.3 && < 0.4
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-extensions:    StandaloneDeriving,

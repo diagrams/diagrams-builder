@@ -45,7 +45,7 @@ module Diagrams.Builder
 
 import           Control.Lens                        ((^.))
 import           Control.Monad                       (guard, mplus, mzero)
-import           Control.Monad.Error                 (catchError)
+import           Control.Monad.Catch                 (catchAll)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
 import           Data.Hashable                       (Hashable (..))
 import           Data.List                           (foldl', nub)
@@ -138,7 +138,7 @@ interpretDiagram bopts m = do
     -- b v and IO (Diagram b v).  Take whichever one typechecks,
     -- running the IO action in the second case to produce a
     -- diagram.
-    d <- interpret dexp (as :: Diagram b v) `catchError` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
+    d <- interpret dexp (as :: Diagram b v) `catchAll` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
 
     -- Finally, call renderDia.
     return $ renderDia (backendToken bopts) (bopts ^. backendOpts) ((bopts ^. postProcess) d)
