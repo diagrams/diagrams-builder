@@ -1,3 +1,10 @@
+0.5.0.4 (15 March 2014)
+-----------------------
+
+    - Update for `hint-0.4`
+	- Allow `diagrams-lib-1.1` and `diagrams-cairo-1.1`
+	- Allow `lens-4.0`
+
 0.5.0.3 (8 March 2014)
 ----------------------
 
