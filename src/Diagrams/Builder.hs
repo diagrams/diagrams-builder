@@ -47,6 +47,7 @@ import           Control.Lens                        ((^.))
 import           Control.Monad                       (guard, mplus, mzero)
 import           Control.Monad.Catch                 (catchAll)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
+import           Data.Data
 import           Data.Hashable                       (Hashable (..))
 import           Data.List                           (foldl', nub)
 import           Data.List.Split                     (splitOn)
@@ -119,7 +120,7 @@ getHsenvArgv = do
 --   expression can be of type @Diagram b v@ or @IO (Diagram b v)@.
 interpretDiagram
   :: forall b v.
-     ( Typeable b, Typeable v
+     ( Typeable b, Typeable v, Data v, Data (Scalar v)
      , InnerSpace v, OrderedField (Scalar v), Backend b v
      )
   => BuildOpts b v
@@ -170,7 +171,7 @@ data BuildResult b v =
 --   parse error if the source does not parse, an interpreter error,
 --   or the final result.
 buildDiagram
-  :: ( Typeable b, Typeable v
+  :: ( Typeable b, Typeable v, Data v, Data (Scalar v)
      , InnerSpace v, OrderedField (Scalar v), Backend b v
      , Hashable (Options b v)
      )
