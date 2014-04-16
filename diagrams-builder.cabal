@@ -55,7 +55,7 @@ library
                        filepath,
                        transformers >= 0.3 && < 0.4,
                        split >= 0.2 && < 0.3,
-                       haskell-src-exts >= 1.14 && < 1.15,
+                       haskell-src-exts >= 1.14 && < 1.16,
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.9 && < 4.2,
                        hashable >= 1.1 && < 1.3,
