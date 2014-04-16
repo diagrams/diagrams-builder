@@ -52,7 +52,6 @@ import           Data.Hashable                       (Hashable (..))
 import           Data.List                           (foldl', nub)
 import           Data.List.Split                     (splitOn)
 import           Data.Maybe                          (catMaybes, fromMaybe)
-import           Data.Typeable                       (Typeable)
 import           System.Directory                    (doesFileExist,
                                                       getTemporaryDirectory,
                                                       removeFile)
