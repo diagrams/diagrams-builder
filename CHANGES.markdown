@@ -1,5 +1,12 @@
-0.5.0.8 (15 April 2014)
+0.5.0.9 (15 April 2014)
 -----------------------
+
+  - Fix bug introduced by 0.5.0.8 release (accidentally included
+    commit meant for compatibility with unreleased versions of other
+    diagrams packages)
+
+0.5.0.8 (15 April 2014) (BROKEN)
+--------------------------------
 
   - Allow `haskell-src-exts-1.15`
 
