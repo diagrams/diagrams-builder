@@ -55,7 +55,7 @@ emptyModule = Module noLoc (ModuleName "Main") [] Nothing Nothing [] []
 doModuleParse :: String -> Either String Module
 doModuleParse src =
   case parseFileContentsWithMode parseMode src of
-    ParseFailed _ err -> Left err
+    ParseFailed sloc err -> Left (prettyPrint sloc ++ ": " ++ err)
     ParseOk m         -> return m
   where
     parseMode
