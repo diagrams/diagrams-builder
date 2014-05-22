@@ -1,3 +1,9 @@
+0.5.0.10 (21 May 2014)
+----------------------
+
+  - Module parse error messages now include the error location
+    (thanks to Yiding Jia)
+
 0.5.0.9 (15 April 2014)
 -----------------------
 
