@@ -1,4 +1,11 @@
-0.5.0.11 (2 June 2014)
+0.6 (5 June 2014)
+-----------------
+
+  - Require `diagrams-lib-1.2`
+  - Change to the type of `buildDiagram` in `0.5.0.11` actually required a major
+    version bump.
+
+0.5.0.11 (2 June 2014) (BROKEN)
 ----------------------
 
   - Allow `transformers-0.4`
