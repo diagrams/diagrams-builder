@@ -1,4 +1,4 @@
-[![Build Status](https://secure.travis-ci.org/diagrams/diagrams-builder.png)](http://travis-ci.org/diagrams/diagrams-builder)
+[![Build Status](https://travis-ci.org/diagrams/diagrams-builder.png?branch=master)](http://travis-ci.org/diagrams/diagrams-builder)
 
 `diagrams-builder` provides backend-agnostic tools for dynamically
 turning code into rendered
