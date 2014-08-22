@@ -1,5 +1,5 @@
 name:                diagrams-builder
-version:             0.6
+version:             0.6.0.1
 synopsis:            hint-based build service for the diagrams graphics EDSL.
 
 description:         @diagrams-builder@ provides backend-agnostic tools for
@@ -36,7 +36,7 @@ maintainer:          diagrams-discuss@googlegroups.com
 category:            Graphics
 build-type:          Simple
 cabal-version:       >=1.10
-tested-with:         GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.2
+tested-with:         GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.3
 bug-reports:         https://github.com/diagrams/diagrams-builder/issues
 Source-repository head
   type:     git
