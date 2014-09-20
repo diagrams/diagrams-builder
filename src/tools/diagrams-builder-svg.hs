@@ -16,7 +16,7 @@ import           Text.Blaze.Svg.Renderer.Utf8 (renderSvg)
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
-  f   <- readFile srcFile
+  f <- readFile srcFile
 
   createDirectoryIfMissing True dir
 

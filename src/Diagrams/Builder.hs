@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -118,7 +119,13 @@ getHsenvArgv = do
 --   expression can be of type @Diagram b v n@ or @IO (Diagram b v n)@.
 interpretDiagram
   :: forall b v n.
-     ( Typeable b, Typeable v, HasLinearMap v, Data (v n), Data n
+     ( Typeable b,
+#if __GLASGOW_HASKELL__ > 707
+     , Typeable v
+#else
+     , Typeable1 v
+#endif
+     , HasLinearMap v, Data (v n), Data n
      , Metric v, OrderedField n, Backend b v n
      )
   => BuildOpts b v n
@@ -170,7 +177,13 @@ data BuildResult b v n =
 --   or the final result.
 buildDiagram
   :: ( Typeable b, Data (v n), Data n
-     , Metric v, HasLinearMap v, Typeable v, OrderedField n, Backend b v n
+     , Metric v, HasLinearMap v
+#if __GLASGOW_HASKELL__ > 707
+     , Typeable v
+#else
+     , Typeable1 v
+#endif
+     , OrderedField n, Backend b v n
      , Hashable (Options b v n)
      )
   => BuildOpts b v n -> IO (BuildResult b v n)
