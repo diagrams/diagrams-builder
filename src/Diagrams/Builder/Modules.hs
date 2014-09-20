@@ -35,7 +35,7 @@ import           Diagrams.Builder.Opts
 --   Returns the updated module, or an error message if parsing
 --   failed.
 createModule :: Maybe String -- ^ Module name to use
-             -> BuildOpts b v
+             -> BuildOpts b v n
              -> Either String Module
 createModule nm opts = do
   ms <- mapM doModuleParse (opts ^. snippets)
@@ -92,7 +92,8 @@ addImports :: [String] -> Module -> Module
 addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imps) d
   where addImport imp is
           | any ((==imp) . getModuleName . importModule) is = is
-          | otherwise = ImportDecl noLoc (ModuleName imp) False False Nothing Nothing Nothing : is
+          | otherwise = ImportDecl noLoc (ModuleName imp) False False False
+                                   Nothing Nothing Nothing : is
 
 -- | Combine two modules into one, with a left bias in the case of
 --   things that can't be sensibly combined (/e.g./ the module name).
@@ -124,3 +125,4 @@ combineModules (Module l1 n1 ps1 w1 e1 i1 d1)
 -- | Convert a @ModuleName@ to a @String@.
 getModuleName :: ModuleName -> String
 getModuleName (ModuleName n) = n
+
