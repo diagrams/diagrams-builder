@@ -119,7 +119,7 @@ getHsenvArgv = do
 --   expression can be of type @Diagram b v n@ or @IO (Diagram b v n)@.
 interpretDiagram
   :: forall b v n.
-     ( Typeable b,
+     ( Typeable b
 #if __GLASGOW_HASKELL__ > 707
      , Typeable v
 #else
