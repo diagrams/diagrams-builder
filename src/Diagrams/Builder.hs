@@ -1,9 +1,9 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 
 -----------------------------------------------------------------------------
@@ -67,7 +67,7 @@ import           Language.Haskell.Interpreter        hiding (ModuleName)
 import           Diagrams.Builder.CmdLine
 import           Diagrams.Builder.Modules
 import           Diagrams.Builder.Opts
-import           Diagrams.Prelude                    hiding ((<.>))
+import           Diagrams.Prelude
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
 import           System.Environment                  (getEnvironment)
 
@@ -109,22 +109,28 @@ setDiagramImports m imps = do
 getHsenvArgv :: IO [String]
 getHsenvArgv = do
   env <- getEnvironment
-  return $ case (lookup "HSENV" env) of
+  return $ case lookup "HSENV" env of
              Nothing -> []
              _       -> hsenvArgv
                  where hsenvArgv = words $ fromMaybe "" (lookup "PACKAGE_DB_FOR_GHC" env)
 
 -- | Interpret a diagram expression based on the contents of a given
 --   source file, using some backend to produce a result.  The
---   expression can be of type @Diagram b v@ or @IO (Diagram b v)@.
+--   expression can be of type @Diagram b v n@ or @IO (Diagram b v n)@.
 interpretDiagram
-  :: forall b v.
-     ( Typeable b, Typeable v, Data v, Data (Scalar v)
-     , InnerSpace v, OrderedField (Scalar v), Backend b v
+  :: forall b v n.
+     ( Typeable b
+#if __GLASGOW_HASKELL__ > 707
+     , Typeable v
+#else
+     , Typeable1 v
+#endif
+     , HasLinearMap v, Data (v n), Data n
+     , Metric v, OrderedField n, Backend b v n
      )
-  => BuildOpts b v
+  => BuildOpts b v n
   -> FilePath
-  -> IO (Either InterpreterError (Result b v))
+  -> IO (Either InterpreterError (Result b v n))
 interpretDiagram bopts m = do
 
   -- use an hsenv sandbox, if one is enabled.
@@ -138,7 +144,7 @@ interpretDiagram bopts m = do
     -- b v and IO (Diagram b v).  Take whichever one typechecks,
     -- running the IO action in the second case to produce a
     -- diagram.
-    d <- interpret dexp (as :: Diagram b v) `catchAll` const (interpret dexp (as :: IO (Diagram b v)) >>= liftIO)
+    d <- interpret dexp (as :: Diagram b v n) `catchAll` const (interpret dexp (as :: IO (Diagram b v n)) >>= liftIO)
 
     -- Finally, call renderDia.
     return $ renderDia (backendToken bopts) (bopts ^. backendOpts) ((bopts ^. postProcess) d)
@@ -155,14 +161,14 @@ ppInterpError (GhcException err) = "GhcException: " ++ err
 ------------------------------------------------------------
 
 -- | Potential results of a dynamic diagram building operation.
-data BuildResult b v =
-    ParseErr  String              -- ^ Parsing of the code failed.
-  | InterpErr InterpreterError    -- ^ Interpreting the code
-                                  --   failed. See 'ppInterpError'.
-  | Skipped Hash                  -- ^ This diagram did not need to be
-                                  --   regenerated; includes the hash.
-  | OK Hash (Result b v)          -- ^ A successful build, yielding the
-                                  --   hash and a backend-specific result.
+data BuildResult b v n =
+    ParseErr  String           -- ^ Parsing of the code failed.
+  | InterpErr InterpreterError -- ^ Interpreting the code
+                               --   failed. See 'ppInterpError'.
+  | Skipped Hash               -- ^ This diagram did not need to be
+                               --   regenerated; includes the hash.
+  | OK Hash (Result b v n)     -- ^ A successful build, yielding the
+                               --   hash and a backend-specific result.
 
 -- | Build a diagram by writing the given source code to a temporary
 --   module and interpreting the given expression, which can be of
@@ -170,11 +176,17 @@ data BuildResult b v =
 --   parse error if the source does not parse, an interpreter error,
 --   or the final result.
 buildDiagram
-  :: ( Typeable b, Typeable v, Data v, Data (Scalar v)
-     , InnerSpace v, OrderedField (Scalar v), Backend b v
-     , Hashable (Options b v)
+  :: ( Typeable b, Data (v n), Data n
+     , Metric v, HasLinearMap v
+#if __GLASGOW_HASKELL__ > 707
+     , Typeable v
+#else
+     , Typeable1 v
+#endif
+     , OrderedField n, Backend b v n
+     , Hashable (Options b v n)
      )
-  => BuildOpts b v -> IO (BuildResult b v)
+  => BuildOpts b v n -> IO (BuildResult b v n)
 buildDiagram bopts = do
   let bopts' = bopts
              & snippets %~ map unLit
@@ -194,7 +206,7 @@ buildDiagram bopts = do
         Nothing  -> return $ Skipped diaHash
         Just upd -> do
           tmpDir   <- getTemporaryDirectory
-          (tmp, h) <- openTempFile tmpDir ("Diagram.hs")
+          (tmp, h) <- openTempFile tmpDir "Diagram.hs"
           let m' = replaceModuleName (takeBaseName tmp) m
           hPutStr h (prettyPrint m')
           hClose h
@@ -211,8 +223,7 @@ buildDiagram bopts = do
 hashLocalImports :: [ImportDecl] -> IO Hash
 hashLocalImports
   = fmap (foldl' hashWithSalt 0 . catMaybes)
-  . mapM getLocalSource
-  . map (foldr1 (</>) . splitOn "." . getModuleName . importModule)
+  . mapM (getLocalSource . foldr1 (</>) . splitOn "." . getModuleName . importModule)
 
 -- | Given a relative path with no extension, like
 --   @\"Foo\/Bar\/Baz\"@, check whether such a file exists with either

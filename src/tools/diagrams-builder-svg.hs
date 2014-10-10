@@ -16,11 +16,11 @@ import           Text.Blaze.Svg.Renderer.Utf8 (renderSvg)
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
-  f   <- readFile srcFile
+  f <- readFile srcFile
 
   createDirectoryIfMissing True dir
 
-  let bopts = mkBuildOpts SVG zeroV (SVGOptions (mkSizeSpec width height) Nothing)
+  let bopts = mkBuildOpts SVG zero (SVGOptions (mkSizeSpec width height) Nothing)
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.SVG" ]
                 & diaExpr  .~ expr

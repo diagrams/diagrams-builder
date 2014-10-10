@@ -56,19 +56,19 @@ type Hash = Int
 --     & imports .~ [\"Foo.Bar\", \"Baz.Quux\"]
 --     & diaExpr .~ \"square 6 # fc green\"
 -- @
-data BuildOpts b v
+data BuildOpts b v n
   = BuildOpts
     { backendToken :: b
       -- ^ Backend token
-    , vectorToken  :: v
+    , vectorToken  :: v n
       -- ^ Dummy vector argument to fix the vector space type
-    , _backendOpts :: Options b v
+    , _backendOpts :: Options b v n
     , _snippets    :: [String]
     , _pragmas     :: [String]
     , _imports     :: [String]
-    , _decideRegen :: Hash -> IO (Maybe (Options b v -> Options b v))
+    , _decideRegen :: Hash -> IO (Maybe (Options b v n -> Options b v n))
     , _diaExpr     :: String
-    , _postProcess :: Diagram b v -> Diagram b v
+    , _postProcess :: Diagram b v n -> Diagram b v n
     }
 
 makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
@@ -86,26 +86,26 @@ makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
 --   * the diagram expression @circle 1@
 --
 --   * no postprocessing
-mkBuildOpts :: b -> v -> Options b v -> BuildOpts b v
+mkBuildOpts :: b -> v n -> Options b v n -> BuildOpts b v n
 mkBuildOpts b v opts
   = BuildOpts b v opts [] [] [] alwaysRegenerate "circle 1" id
 
 -- | Backend-specific options to use.
-backendOpts :: Lens' (BuildOpts b v) (Options b v)
+backendOpts :: Lens' (BuildOpts b v n) (Options b v n)
 
 -- | Source code snippets.  Each should be a syntactically valid
 --   Haskell module.  They will be combined intelligently, /i.e./
 --   not just pasted together textually but combining pragmas,
 --   imports, /etc./ separately.
-snippets :: Lens' (BuildOpts b v) [String]
+snippets :: Lens' (BuildOpts b v n) [String]
 
 -- | Extra @LANGUAGE@ pragmas to use (@NoMonomorphismRestriction@
 --   is automatically enabled.)
-pragmas :: Lens' (BuildOpts b v) [String]
+pragmas :: Lens' (BuildOpts b v n) [String]
 
 -- | Additional module imports (note that "Diagrams.Prelude" is
 --   automatically imported).
-imports :: Lens' (BuildOpts b v) [String]
+imports :: Lens' (BuildOpts b v n) [String]
 
 -- | A function to decide whether a particular diagram needs to be
 --   regenerated.  It will be passed a hash of the final assembled
@@ -127,13 +127,13 @@ imports :: Lens' (BuildOpts b v) [String]
 --   and always decides to regenerate the diagram;
 --   'hashedRegenerate' creates a hash of the diagram source and
 --   looks for a file with that name in a given directory.
-decideRegen :: Lens' (BuildOpts b v) (Hash -> IO (Maybe (Options b v -> Options b v)))
+decideRegen :: Lens' (BuildOpts b v n) (Hash -> IO (Maybe (Options b v n -> Options b v n)))
 
 -- | The diagram expression to interpret.  All the given import sand
 --   snippets will be in scope, with the given LANGUAGE pragmas
 --   enabled.  The expression may have either of the types @Diagram b
 --   v@ or @IO (Diagram b v)@.
-diaExpr :: Lens' (BuildOpts b v) String
+diaExpr :: Lens' (BuildOpts b v n) String
 
 -- | A function to apply to the interpreted diagram prior to
 --   rendering.  For example, you might wish to apply @pad 1.1
@@ -141,7 +141,7 @@ diaExpr :: Lens' (BuildOpts b v) String
 --   string expression to be interpreted, since it gives better
 --   typechecking, and works no matter whether the expression
 --   represents a diagram or an IO action.
-postProcess :: Lens' (BuildOpts b v) (Diagram b v -> Diagram b v)
+postProcess :: Lens' (BuildOpts b v n) (Diagram b v n -> Diagram b v n)
 
 -- | Convenience function suitable to be given as the final argument
 --   to 'buildDiagram'.  It implements the simple policy of always
