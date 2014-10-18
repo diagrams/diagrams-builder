@@ -144,7 +144,7 @@ interpretDiagram bopts m = do
     -- b v and IO (Diagram b v).  Take whichever one typechecks,
     -- running the IO action in the second case to produce a
     -- diagram.
-    d <- interpret dexp (as :: Diagram b v n) `catchAll` const (interpret dexp (as :: IO (Diagram b v n)) >>= liftIO)
+    d <- interpret dexp (as :: QDiagram b v n Any) `catchAll` const (interpret dexp (as :: IO (QDiagram b v n Any)) >>= liftIO)
 
     -- Finally, call renderDia.
     return $ renderDia (backendToken bopts) (bopts ^. backendOpts) ((bopts ^. postProcess) d)

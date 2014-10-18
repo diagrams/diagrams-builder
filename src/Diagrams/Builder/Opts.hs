@@ -34,7 +34,7 @@ import           System.Directory (getDirectoryContents)
 import           System.FilePath  (takeBaseName)
 import           Text.Printf
 
-import           Diagrams.Prelude (Diagram, Options)
+import           Diagrams.Prelude (QDiagram, Options, Any)
 
 -- | Synonym for more perspicuous types.
 --
@@ -68,7 +68,7 @@ data BuildOpts b v n
     , _imports     :: [String]
     , _decideRegen :: Hash -> IO (Maybe (Options b v n -> Options b v n))
     , _diaExpr     :: String
-    , _postProcess :: Diagram b v n -> Diagram b v n
+    , _postProcess :: QDiagram b v n Any -> QDiagram b v n Any
     }
 
 makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
@@ -131,8 +131,8 @@ decideRegen :: Lens' (BuildOpts b v n) (Hash -> IO (Maybe (Options b v n -> Opti
 
 -- | The diagram expression to interpret.  All the given import sand
 --   snippets will be in scope, with the given LANGUAGE pragmas
---   enabled.  The expression may have either of the types @Diagram b
---   v@ or @IO (Diagram b v)@.
+--   enabled.  The expression may have either of the types @Diagram b@
+--   or @IO (Diagram b)@.
 diaExpr :: Lens' (BuildOpts b v n) String
 
 -- | A function to apply to the interpreted diagram prior to
@@ -141,7 +141,7 @@ diaExpr :: Lens' (BuildOpts b v n) String
 --   string expression to be interpreted, since it gives better
 --   typechecking, and works no matter whether the expression
 --   represents a diagram or an IO action.
-postProcess :: Lens' (BuildOpts b v n) (Diagram b v n -> Diagram b v n)
+postProcess :: Lens' (BuildOpts b v n) (QDiagram b v n Any -> QDiagram b v n Any)
 
 -- | Convenience function suitable to be given as the final argument
 --   to 'buildDiagram'.  It implements the simple policy of always
