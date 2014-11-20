@@ -92,7 +92,8 @@ addImports :: [String] -> Module -> Module
 addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imps) d
   where addImport imp is
           | any ((==imp) . getModuleName . importModule) is = is
-          | otherwise = ImportDecl noLoc (ModuleName imp) False False Nothing Nothing Nothing : is
+          | otherwise = ImportDecl noLoc (ModuleName imp) False False False
+                        Nothing Nothing Nothing : is
 
 -- | Combine two modules into one, with a left bias in the case of
 --   things that can't be sensibly combined (/e.g./ the module name).
