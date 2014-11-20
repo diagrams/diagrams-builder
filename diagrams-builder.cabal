@@ -100,7 +100,7 @@ executable diagrams-builder-cairo
                        diagrams-lib >= 0.6 && < 1.3,
                        diagrams-cairo >= 0.6 && < 1.3,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.5
+                       lens >= 3.8 && < 4.7
 
 executable diagrams-builder-svg
   main-is:             diagrams-builder-svg.hs
@@ -141,4 +141,4 @@ executable diagrams-builder-ps
                        diagrams-lib >= 0.6 && < 1.3,
                        diagrams-postscript >= 0.6 && < 1.2,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.5
+                       lens >= 3.8 && < 4.7
