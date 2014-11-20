@@ -1,3 +1,9 @@
+0.6.0.2 (20 November 2014)
+--------------------------
+
+- Allow `lens-4.6`
+- Allow and require `haskell-src-exts-1.16`
+
 0.6.0.1 (22 August 2014)
 ------------------------
 
