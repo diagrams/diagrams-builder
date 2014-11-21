@@ -19,7 +19,7 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  let bopts = mkBuildOpts Postscript zero (PostscriptOptions outFile (mkSizeSpec width height) EPS)
+  let bopts = mkBuildOpts Postscript zero (PostscriptOptions outFile (mkSizeSpec2D width height) EPS)
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.Postscript" ]
                 & diaExpr  .~ expr

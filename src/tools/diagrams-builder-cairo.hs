@@ -29,7 +29,7 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  let bopts = mkBuildOpts Cairo zero (CairoOptions outFile (mkSizeSpec width height) fmt False)
+  let bopts = mkBuildOpts Cairo zero (CairoOptions outFile (mkSizeSpec2D width height) fmt False)
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.Cairo" ]
                 & diaExpr  .~ expr
