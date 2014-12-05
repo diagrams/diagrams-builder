@@ -56,7 +56,7 @@ doModuleParse :: String -> Either String Module
 doModuleParse src =
   case parseFileContentsWithMode parseMode src of
     ParseFailed sloc err -> Left (prettyPrint sloc ++ ": " ++ err)
-    ParseOk m         -> return m
+    ParseOk m            -> return m
   where
     parseMode
       = defaultParseMode

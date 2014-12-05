@@ -20,19 +20,20 @@ module Diagrams.Builder.Opts
     ( -- * Options
 
       Hash
-    , BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
+    , BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas,
+      imports, hashCache, diaExpr, postProcess
 
       -- * Rebuilding
 
-    , alwaysRegenerate, hashedRegenerate, hashToHexStr
+    -- , alwaysRegenerate, hashedRegenerate, hashToHexStr
     )
     where
 
 import           Control.Lens     (Lens', generateSignatures, lensRules,
                                    makeLensesWith, (&), (.~))
-import           System.Directory (getDirectoryContents)
-import           System.FilePath  (takeBaseName)
-import           Text.Printf
+-- import           System.Directory (getDirectoryContents)
+-- import           System.FilePath  (takeBaseName)
+-- import           Text.Printf
 
 import           Diagrams.Prelude (QDiagram, Options, Any)
 
@@ -66,7 +67,8 @@ data BuildOpts b v n
     , _snippets    :: [String]
     , _pragmas     :: [String]
     , _imports     :: [String]
-    , _decideRegen :: Hash -> IO (Maybe (Options b v n -> Options b v n))
+    -- , _decideRegen :: Hash -> IO (Maybe (Options b v n -> Options b v n))
+    , _hashCache   :: Maybe FilePath
     , _diaExpr     :: String
     , _postProcess :: QDiagram b v n Any -> QDiagram b v n Any
     }
@@ -88,7 +90,7 @@ makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
 --   * no postprocessing
 mkBuildOpts :: b -> v n -> Options b v n -> BuildOpts b v n
 mkBuildOpts b v opts
-  = BuildOpts b v opts [] [] [] alwaysRegenerate "circle 1" id
+  = BuildOpts b v opts [] [] [] Nothing "circle 1" id
 
 -- | Backend-specific options to use.
 backendOpts :: Lens' (BuildOpts b v n) (Options b v n)
@@ -127,7 +129,10 @@ imports :: Lens' (BuildOpts b v n) [String]
 --   and always decides to regenerate the diagram;
 --   'hashedRegenerate' creates a hash of the diagram source and
 --   looks for a file with that name in a given directory.
-decideRegen :: Lens' (BuildOpts b v n) (Hash -> IO (Maybe (Options b v n -> Options b v n)))
+-- decideRegen :: Lens' (BuildOpts b v n) (Hash -> IO (Maybe (Options b v n -> Options b v n)))
+
+-- | Only rebuild the diagram if the hash has changed.
+hashCache :: Lens' (BuildOpts b v n) (Maybe FilePath)
 
 -- | The diagram expression to interpret.  All the given import sand
 --   snippets will be in scope, with the given LANGUAGE pragmas
@@ -143,45 +148,45 @@ diaExpr :: Lens' (BuildOpts b v n) String
 --   represents a diagram or an IO action.
 postProcess :: Lens' (BuildOpts b v n) (QDiagram b v n Any -> QDiagram b v n Any)
 
--- | Convenience function suitable to be given as the final argument
---   to 'buildDiagram'.  It implements the simple policy of always
---   rebuilding every diagram.
-alwaysRegenerate :: Hash -> IO (Maybe (a -> a))
-alwaysRegenerate _ = return (Just id)
+-- -- | Convenience function suitable to be given as the final argument
+-- --   to 'buildDiagram'.  It implements the simple policy of always
+-- --   rebuilding every diagram.
+-- alwaysRegenerate :: Hash -> IO (Maybe (a -> a))
+-- alwaysRegenerate _ = return (Just id)
 
--- | Convenience function suitable to be given as the final argument
---   to 'buildDiagram'.  It works by converting the hash value to a
---   zero-padded hexadecimal string and looking in the specified
---   directory for any file whose base name is equal to the hash.  If
---   there is such a file, it specifies that the diagram should not be
---   rebuilt.  Otherwise, it specifies that the diagram should be
---   rebuilt, and uses the provided function to update the rendering
---   options based on the generated hash string.  (Most likely, one
---   would want to set the requested output file to the hash followed
---   by some extension.)
-hashedRegenerate
-  :: (String -> a -> a)
-     -- ^ A function for computing an update to rendering options,
-     --   given a new base filename computed from a hash of the
-     --   diagram source.
+-- -- | Convenience function suitable to be given as the final argument
+-- --   to 'buildDiagram'.  It works by converting the hash value to a
+-- --   zero-padded hexadecimal string and looking in the specified
+-- --   directory for any file whose base name is equal to the hash.  If
+-- --   there is such a file, it specifies that the diagram should not be
+-- --   rebuilt.  Otherwise, it specifies that the diagram should be
+-- --   rebuilt, and uses the provided function to update the rendering
+-- --   options based on the generated hash string.  (Most likely, one
+-- --   would want to set the requested output file to the hash followed
+-- --   by some extension.)
+-- hashedRegenerate
+--   :: (String -> a -> a)
+--      -- ^ A function for computing an update to rendering options,
+--      --   given a new base filename computed from a hash of the
+--      --   diagram source.
 
-  -> FilePath
-     -- ^ The directory in which to look for generated files
+--   -> FilePath
+--      -- ^ The directory in which to look for generated files
 
-  -> Hash
-     -- ^ The hash
+--   -> Hash
+--      -- ^ The hash
 
-  -> IO (Maybe (a -> a))
+--   -> IO (Maybe (a -> a))
 
-hashedRegenerate upd d hash = do
-  let fileBase = hashToHexStr hash
-  files <- getDirectoryContents d
-  case any ((fileBase==) . takeBaseName) files of
-    True  -> return Nothing
-    False -> return $ Just (upd fileBase)
+-- hashedRegenerate upd d hash = do
+--   let fileBase = hashToHexStr hash
+--   files <- getDirectoryContents d
+--   case any ((fileBase==) . takeBaseName) files of
+--     True  -> return Nothing
+--     False -> return $ Just (upd fileBase)
 
-hashToHexStr :: Hash -> String
-hashToHexStr n = printf "%016x" n'
-  where
-    n' :: Integer
-    n' = fromIntegral n - fromIntegral (minBound :: Int)
+-- hashToHexStr :: Hash -> String
+-- hashToHexStr n = printf "%016x" n'
+--   where
+--     n' :: Integer
+--     n' = fromIntegral n - fromIntegral (minBound :: Int)
