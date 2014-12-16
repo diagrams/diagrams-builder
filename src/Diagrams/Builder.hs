@@ -49,7 +49,7 @@ import           Control.Monad.Catch                 (catchAll)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
 import           Data.Data
 import           Data.Hashable                       (Hashable (..))
-import           Data.List                           (foldl', nub)
+import           Data.List                           (foldl', isSuffixOf, nub)
 import           Data.List.Split                     (splitOn)
 import           Data.Maybe                          (catMaybes, fromMaybe)
 import           System.Directory                    (doesFileExist,
@@ -69,7 +69,9 @@ import           Diagrams.Builder.Modules
 import           Diagrams.Builder.Opts
 import           Diagrams.Prelude
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
+import           System.Directory (getDirectoryContents)
 import           System.Environment                  (getEnvironment)
+import           System.FilePath (splitDirectories, splitExtensions)
 
 deriving instance Typeable Any
 
@@ -106,13 +108,31 @@ setDiagramImports m imps = do
                  ]
                  ++ imps
 
+-- | Make it easier to specify a package database in a sandbox by
+-- looking for a lone package-db if only the sandbox directory is
+-- given. If no package DB is found beneath the given directory, the
+-- argument is returned unchanged.
+findSandbox :: FilePath -> IO FilePath
+findSandbox d
+    | last (splitDirectories d) == ".cabal-sandbox" =
+        do dbs <- filter isDB `fmap` getDirectoryContents d
+           case dbs of
+             [] -> return d
+             [db] -> return $ d </> db
+             _ -> error "Found package databases for multiple GHCs. \
+                         \\Set the DIAGRAMS_SANDBOX environment variable\
+                         \to a specific one."
+    | otherwise = putStrLn "Not a sandbox?" >> return d
+  where isDB = (".conf.d" `isSuffixOf`) . snd . splitExtensions
+
 getHsenvArgv :: IO [String]
 getHsenvArgv = do
   env <- getEnvironment
-  return $ case lookup "HSENV" env of
-             Nothing -> []
-             _       -> hsenvArgv
-                 where hsenvArgv = words $ fromMaybe "" (lookup "PACKAGE_DB_FOR_GHC" env)
+  case lookup "HSENV" env of
+    Nothing -> maybe (return [])
+                     (fmap (pure . ("-package-db "++)) . findSandbox)
+                     (lookup "DIAGRAMS_SANDBOX" env)
+    _ -> return . words $ fromMaybe "" (lookup "PACKAGE_DB_FOR_GHC" env)
 
 -- | Interpret a diagram expression based on the contents of a given
 --   source file, using some backend to produce a result.  The
