@@ -52,7 +52,7 @@ build :: Build
 build =
   defaultBuildOpts
   { outFile  = "out.png" &= typFile &= help "Output file (default: \"out.png\")" }
-  &= summary "The diagrams-builder-rasterific program, for dynamically rendering diagrams using the rasterific backend.  Give it a source file and an expression to render (which may refer to things declared in the source file), and it outputs an image, using hashing to avoid rerendering images unnecessarily."
+  &= summary "The diagrams-builder-rasterific program, for dynamically rendering diagrams using the rasterific backend.  Give it a source file and an expression to render (which may refer to things declared in the source file), and it outputs an image, using hashing to avoid rerendering images unnecessarily.\n\nIf you have installed the diagrams-lib and diagrams-rasterific packages in a sandbox, set the environment variable DIAGRAMS_SANDBOX to that directory so the builder can compile your diagram. For example, \"export DIAGRAMS_SANDBOX=~/diagrams/.cabal-sandbox\". If you have package databases for multiple versions of GHC in that sandbox, you will need to set the full path to the package database (it ends in \".conf.d\")."
   &= program "diagrams-builder-rasterific"
 
 main :: IO ()
