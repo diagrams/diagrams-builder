@@ -119,9 +119,10 @@ findSandbox d
            case dbs of
              [] -> return d
              [db] -> return $ d </> db
-             _ -> error "Found package databases for multiple GHCs. \
-                         \\Set the DIAGRAMS_SANDBOX environment variable\
-                         \to a specific one."
+             _ -> error $ concat [ "Found package databases for multiple GHCs. "
+                                 , "Set the DIAGRAMS_SANDBOX environment variable "
+                                 , "to a specific one."
+                                 ]
     | otherwise = putStrLn "Not a sandbox?" >> return d
   where isDB = (".conf.d" `isSuffixOf`) . snd . splitExtensions
 
