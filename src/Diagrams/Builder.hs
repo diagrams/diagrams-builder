@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE ViewPatterns          #-}
+{-# LANGUAGE ConstraintKinds       #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 
 -----------------------------------------------------------------------------
@@ -48,7 +49,7 @@ module Diagrams.Builder where
 
        -- ) where
 
-import           Control.Lens                 (cons, (^.))
+import           Control.Lens                 (cons, (^.), (^?), Traversal', _Just)
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.Trans.Maybe    (MaybeT, runMaybeT)
@@ -62,9 +63,8 @@ import           Data.Maybe
 import           Data.Traversable             as T (Traversable, mapM)
 import           Data.Word                    (Word)
 import           Numeric                      (showHex)
-import           System.Directory             (doesFileExist)
-import           System.Directory             (getDirectoryContents)
-import           System.FilePath              (takeBaseName, (<.>), (</>))
+import           System.Directory             (getDirectoryContents, doesFileExist, copyFile)
+import           System.FilePath              (takeBaseName, (<.>), (</>), takeExtension)
 import           System.IO                    (hClose, hPutStr)
 import           System.IO.Temp
 
@@ -82,6 +82,10 @@ deriving instance Typeable Any
 #if __GLASGOW_HASKELL__ >= 707
 #define Typeable1 Typeable
 #endif
+
+type BuildBackend b v n =
+  (BackendBuild b v n, Hashable (Options b v n), Typeable b, Typeable1 v,
+   HasLinearMap v, Metric v, Typeable n, OrderedField n)
 
 ------------------------------------------------------------
 -- Interpreting diagrams
@@ -132,6 +136,7 @@ setDiagramImports m imps = do
 --     _       -> hsenvArgv
 --         where hsenvArgv = words $ fromMaybe "" (lookup "PACKAGE_DB_FOR_GHC" env)
 
+-- | Interpret the module and return the 'Diagram'.
 interpretDia
   :: (MonadInterpreter m, Typeable (QDiagram b v n Any))
   => BuildOpts b v n
@@ -141,6 +146,7 @@ interpretDia bopts m = do
   setDiagramImports m (bopts ^. imports)
   interpDiagram (bopts ^. diaExpr)
 
+-- | Interpret the module and return the 'Result'.
 interpretResult
   :: ( MonadInterpreter m
      , Typeable b, Typeable1 v, HasLinearMap v, Metric v
@@ -152,21 +158,20 @@ interpretResult bopts m = f `liftM` interpretDia bopts m
   where
     f d = renderDia (backendToken bopts) (bopts ^. backendOpts) ((bopts ^. postProcess) d)
 
+-- | Interpret the module and save the diagram.
 interpretBuild
-  :: (MonadInterpreter m, BackendBuild b v n r
-     , Typeable b, Typeable1 v, HasLinearMap v, Metric v
-     , Typeable n, OrderedField n
-     )
+  :: (MonadInterpreter m, BuildBackend b v n)
   => BuildOpts b v n
   -> FilePath -- ^ path to Module
-  -> r
   -> FilePath -- ^ path to save diagram
-  -> m (Maybe String)
-interpretBuild bopts m r outF = interpretDia bopts m >>= liftIO . f
+  -> m ()
+interpretBuild bopts m outF = interpretDia bopts m >>= liftIO . f
   where
-    f = buildDia' r outF (bopts ^. backendOpts)
+    f = saveDia outF (bopts ^. backendOpts)
 
 -- | Interpret a @Diagram@ or @IO Diagram@ at the name of the function.
+--   (This means the source should already be loaded by the
+--   interpreter.)
 interpDiagram :: forall m b v n m'. (MonadInterpreter m, Typeable (QDiagram b v n m'))
               => String -> m (QDiagram b v n m')
 interpDiagram dExp =
@@ -187,41 +192,94 @@ data BuildResult r
   | OK Hash r                  -- ^ A successful build
   deriving (Show, Functor, Foldable, Traversable)
 
-buildResult
-  :: (MonadInterpreter m, BackendBuild b v n r, Hashable (Options b v n )
-     , Typeable b, Typeable1 v, HasLinearMap v, Metric v
-     , Typeable n, OrderedField n
-     )
-  => BuildOpts b v n
-  -> r
-  -> FilePath
-  -> m (BuildResult (Maybe String))
-buildResult opts r outF = do
-  d <- buildDiagram opts
-  liftIO $ buildDia' r outF (opts ^. backendOpts) `T.mapM` d
+resultHash :: Traversal' (BuildResult r) Hash
+resultHash f (Skipped h) = Skipped <$> f h
+resultHash f (OK h r)    = OK <$> f h <*> pure r
+resultHash _ err         = pure err
 
-buildDiagram
-  :: (MonadInterpreter m, Typeable (QDiagram b v n Any), Hashable (Options b v n))
+-- | Build a diagram and save it to it's hash.
+buildToHash
+  :: BuildBackend b v n
   => BuildOpts b v n
-  -> m (BuildResult (QDiagram b v n Any))
+  -> String          -- ^ extension
+  -> IO (BuildResult ())
+buildToHash opts ext = do
+  let dir = opts ^. hashCache . _Just
+  d <- buildDiagram opts
+  case d of
+    OK h dia -> saveDia (dir </> showHash h <.> ext) (opts ^. backendOpts) dia
+             >> return (OK h ())
+    _        -> return (() <$ d)
+
+-- | Build a diagram and save it to it's hash and copy it to file.
+buildBuild
+  :: BuildBackend b v n
+  => BuildOpts b v n
+  -> FilePath
+  -> IO (BuildResult ())
+buildBuild opts outFile = do
+  let ext = takeExtension outFile
+  r <- buildToHash opts (takeExtension outFile)
+  case r ^? resultHash of
+    Just h  -> copyFile (mkFile h ext) outFile
+            >> return r
+    Nothing -> return r
+  -- saveDia outFile (opts ^. backendOpts) `T.mapM` d
+  where
+    mkFile base ext = showHash base <.> ext
+
+buildResult
+  :: BuildBackend b v n
+  => BuildOpts b v n
+  -> IO (BuildResult (Result b v n))
+buildResult opts = do
+  d <- buildDiagram opts
+  return $ renderDia undefined (opts ^. backendOpts) <$> d
+
+-- | Build a diagram. If the module hash is found, skip interpreting.
+buildDiagram
+  :: (Typeable (QDiagram b v n Any), Hashable (Options b v n), Typeable n, Typeable b, Typeable1 v)
+  => BuildOpts b v n
+  -> IO (BuildResult (QDiagram b v n Any))
 buildDiagram (prepareOpts -> bopts) = case createModule Nothing bopts of
   Left err -> return (ParseError err)
   Right m  -> do
-    diaHash <- liftIO $ hashModule bopts m
+    diaHash <- hashModule bopts m
+
+    let getDia = do
+          d <- runInterpreter $ interpretDiaModule bopts m
+          return $ either InterpError (OK diaHash) d
+
     case bopts ^. hashCache of
-      Nothing   -> OK diaHash `liftM` buildDiagram' bopts m
+      Nothing   -> getDia
       Just path -> do
-        alreadyDone <- liftIO $ isJust <$> checkHash path diaHash
+        alreadyDone <- isJust <$> checkHash path diaHash
         if alreadyDone
           then return $ Skipped diaHash
-          else OK diaHash `liftM` buildDiagram' bopts m
+          else getDia
 
-buildDiagram'
+-- buildDiagram
+--   :: (MonadInterpreter m, Typeable (QDiagram b v n Any), Hashable (Options b v n))
+--   => BuildOpts b v n
+--   -> IO (Either String (QDiagram b v n Any))
+-- buildDiagram (prepareOpts -> bopts) = case createModule Nothing bopts of
+--   Left err -> return (ParseError err)
+--   Right m  -> do
+--     diaHash <- liftIO $ hashModule bopts m
+--     case bopts ^. hashCache of
+--       Nothing   -> OK diaHash `liftM` buildDiagram' bopts m
+--       Just path -> do
+--         alreadyDone <- liftIO $ isJust <$> checkHash path diaHash
+--         if alreadyDone
+--           then return $ Skipped diaHash
+--           else OK diaHash `liftM` buildDiagram' bopts m
+
+interpretDiaModule
   :: (MonadInterpreter m, Typeable (QDiagram b v n Any))
   => BuildOpts b v n
   -> Module
   -> m (QDiagram b v n Any)
-buildDiagram' bopts m = tempModule m (interpretDia bopts)
+interpretDiaModule bopts m = tempModule m (interpretDia bopts)
 
 -- | Write a module to a tempory file and delete it when done. The
 --   module name is replaced by the tempory file's name (\"Diagram\").
@@ -230,20 +288,7 @@ tempModule m f =
   withSystemTempFile "Diagram.hs" $ \temp h -> do
     let m' = replaceModuleName (takeBaseName temp) m
     liftIO $ hPutStr h (prettyPrint m') >> hClose h
-    liftIO $ putStrLn $ prettyPrint m'
     f temp
-
--- | Check for an existing rendered diagram in the directory that
---   matches the hash.
-checkHash :: FilePath -> Hash -> IO (Maybe FilePath)
-checkHash dir diaHash = do
-  files <- getDirectoryContents dir
-  return $ find ((== hashHex diaHash) . takeBaseName) files
-
-prepareOpts :: BuildOpts b v n -> BuildOpts b v n
-prepareOpts o = o & snippets %~ map unLit
-                  & pragmas  %~ cons "NoMonomorphismRestriction"
-                  & imports  %~ cons "Diagrams.Prelude"
 
 ------------------------------------------------------------------------
 -- Hashing
@@ -307,5 +352,20 @@ ppInterpError (WontCompile  es)  = unlines . nub . map errMsg $ es
 ppInterpError (NotAllowed   err) = "NotAllowed: "   ++ err
 ppInterpError (GhcException err) = "GhcException: " ++ err
 
-hashHex :: Hash -> String
-hashHex h = showHex (fromIntegral h :: Word) ""
+-- Turn a Hash into a hex with no leading 0x. Hash is converted to a
+-- word to avoid negative values.
+showHash :: Hash -> String
+showHash h = showHex (fromIntegral h :: Word) ""
+
+
+-- | Check for an existing rendered diagram in the directory that
+--   matches the hash.
+checkHash :: FilePath -> Hash -> IO (Maybe FilePath)
+checkHash dir diaHash = do
+  files <- getDirectoryContents dir
+  return $ find ((== showHash diaHash) . takeBaseName) files
+
+prepareOpts :: BuildOpts b v n -> BuildOpts b v n
+prepareOpts o = o & snippets %~ map unLit
+                  & pragmas  %~ cons "NoMonomorphismRestriction"
+                  & imports  %~ cons "Diagrams.Prelude"
