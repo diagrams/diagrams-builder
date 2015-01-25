@@ -14,7 +14,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Builder
--- Copyright   :  (c) 2012 diagrams-lib team (see LICENSE)
+-- Copyright   :  (c) 2012-2015 diagrams-lib team (see LICENSE)
 -- License     :  BSD-style (see LICENSE)
 -- Maintainer  :  diagrams-discuss@googlegroups.com
 --
@@ -53,7 +53,7 @@ module Diagrams.Builder
   , interpretDia
 
     -- * Type aliases
-  , Backend', BackendBuild'
+  , Backend', BackendBuild', Hash
 
   ) where
 
@@ -103,6 +103,17 @@ type BackendBuild' b v n =
 type Backend' b v n =
   (Typeable b, Typeable1 v, HasLinearMap v, Metric v,
    Typeable n, OrderedField n, Backend b v n)
+
+-- | Synonym for more perspicuous types.
+--
+--   We use @Int@ values for hashes because that's what the @Hashable@
+--   package uses.  Assuming diagram hashes are uniformly distributed,
+--   on a 64-bit system one needs to build on the order of billions of
+--   diagrams before the probability of a hash collision exceeds 1/2,
+--   and for anything up to tens of millions of diagrams the
+--   probability of a collision is under 0.1%.  On 32-bit systems
+--   those become tens of thousands and thousands, respectively.
+type Hash = Int
 
 ------------------------------------------------------------
 -- Interpreting diagrams

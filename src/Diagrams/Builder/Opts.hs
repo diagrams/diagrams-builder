@@ -9,7 +9,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Builder.Opts
--- Copyright   :  (c) 2013 diagrams-lib team (see LICENSE)
+-- Copyright   :  (c) 2013-2015 diagrams-lib team (see LICENSE)
 -- License     :  BSD-style (see LICENSE)
 -- Maintainer  :  diagrams-discuss@googlegroups.com
 --
@@ -17,61 +17,49 @@
 --
 -----------------------------------------------------------------------------
 module Diagrams.Builder.Opts
-    ( -- * Options
+  ( -- * Options
+    BuildOpts(..)
+  , mkBuildOpts
+  , backendOpts
+  , snippets
+  , pragmas
+  ,
+    imports
+  , hashCache
+  , diaExpr
+  , postProcess
 
-      Hash
-    , BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas,
-      imports, hashCache, diaExpr, postProcess
-
-      -- * Rebuilding
-
-    -- , alwaysRegenerate, hashedRegenerate, hashToHexStr
     )
     where
 
 import           Control.Lens     (Lens', generateSignatures, lensRules,
                                    makeLensesWith, (&), (.~))
--- import           System.Directory (getDirectoryContents)
--- import           System.FilePath  (takeBaseName)
--- import           Text.Printf
 
 import           Diagrams.Prelude (QDiagram, Options, Any)
 
--- | Synonym for more perspicuous types.
---
---   We use @Int@ values for hashes because that's what the @Hashable@
---   package uses.  Assuming diagram hashes are uniformly distributed,
---   on a 64-bit system one needs to build on the order of billions of
---   diagrams before the probability of a hash collision exceeds 1/2,
---   and for anything up to tens of millions of diagrams the
---   probability of a collision is under 0.1%.  On 32-bit systems
---   those become tens of thousands and thousands, respectively.
-type Hash = Int
 
 -- | Options to control the behavior of @buildDiagram@.  Create one
 --   with 'mkBuildOpts' followed by using the provided lenses to
 --   override more fields; for example,
 --
 -- @
---   mkBuildOpts SVG zeroV (Options ...)
+--   mkBuildOpts SVG zero (Options ...)
 --     & imports .~ [\"Foo.Bar\", \"Baz.Quux\"]
 --     & diaExpr .~ \"square 6 # fc green\"
 -- @
-data BuildOpts b v n
-  = BuildOpts
-    { backendToken :: b
-      -- ^ Backend token
-    , vectorToken  :: v n
-      -- ^ Dummy vector argument to fix the vector space type
-    , _backendOpts :: Options b v n
-    , _snippets    :: [String]
-    , _pragmas     :: [String]
-    , _imports     :: [String]
-    -- , _decideRegen :: Hash -> IO (Maybe (Options b v n -> Options b v n))
-    , _hashCache   :: Maybe FilePath
-    , _diaExpr     :: String
-    , _postProcess :: QDiagram b v n Any -> QDiagram b v n Any
-    }
+data BuildOpts b v n = BuildOpts
+  { backendToken :: b
+    -- ^ Backend token
+  , vectorToken  :: v n
+    -- ^ Dummy vector argument to fix the vector space type
+  , _backendOpts :: Options b v n
+  , _snippets    :: [String]
+  , _pragmas     :: [String]
+  , _imports     :: [String]
+  , _hashCache   :: Maybe FilePath
+  , _diaExpr     :: String
+  , _postProcess :: QDiagram b v n Any -> QDiagram b v n Any
+  }
 
 makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
 
@@ -148,45 +136,3 @@ diaExpr :: Lens' (BuildOpts b v n) String
 --   represents a diagram or an IO action.
 postProcess :: Lens' (BuildOpts b v n) (QDiagram b v n Any -> QDiagram b v n Any)
 
--- -- | Convenience function suitable to be given as the final argument
--- --   to 'buildDiagram'.  It implements the simple policy of always
--- --   rebuilding every diagram.
--- alwaysRegenerate :: Hash -> IO (Maybe (a -> a))
--- alwaysRegenerate _ = return (Just id)
-
--- -- | Convenience function suitable to be given as the final argument
--- --   to 'buildDiagram'.  It works by converting the hash value to a
--- --   zero-padded hexadecimal string and looking in the specified
--- --   directory for any file whose base name is equal to the hash.  If
--- --   there is such a file, it specifies that the diagram should not be
--- --   rebuilt.  Otherwise, it specifies that the diagram should be
--- --   rebuilt, and uses the provided function to update the rendering
--- --   options based on the generated hash string.  (Most likely, one
--- --   would want to set the requested output file to the hash followed
--- --   by some extension.)
--- hashedRegenerate
---   :: (String -> a -> a)
---      -- ^ A function for computing an update to rendering options,
---      --   given a new base filename computed from a hash of the
---      --   diagram source.
-
---   -> FilePath
---      -- ^ The directory in which to look for generated files
-
---   -> Hash
---      -- ^ The hash
-
---   -> IO (Maybe (a -> a))
-
--- hashedRegenerate upd d hash = do
---   let fileBase = hashToHexStr hash
---   files <- getDirectoryContents d
---   case any ((fileBase==) . takeBaseName) files of
---     True  -> return Nothing
---     False -> return $ Just (upd fileBase)
-
--- hashToHexStr :: Hash -> String
--- hashToHexStr n = printf "%016x" n'
---   where
---     n' :: Integer
---     n' = fromIntegral n - fromIntegral (minBound :: Int)
