@@ -86,6 +86,7 @@ import           Diagrams.Prelude
 import           Language.Haskell.Exts        (ImportDecl, Module (..),
                                                importModule, prettyPrint)
 import           Language.Haskell.Interpreter hiding (ModuleName)
+import           Language.Haskell.Interpreter.Unsafe
 
 deriving instance Typeable Any
 
@@ -152,11 +153,6 @@ interpretDiaWithOpts bopts m = do
   setDiaImports m (bopts ^. imports)
   (bopts ^. postProcess) `liftM` interpretDia (bopts ^. diaExpr)
 
--- | Convenient function to turn a 'QDiagram' to its 'Result' using
---   'BuildOpts'. The 'postProcess' is not applied.
-diaResult :: Backend' b v n => BuildOpts b v n -> QDiagram b v n Any -> Result b v n
-diaResult bopts = renderDia (backendToken bopts) (bopts ^. backendOpts)
-
 -- | Same as 'interpretDiaWithOpts' but save 'Module' to a temporary file
 --   and import it.
 interpretDiaModule
@@ -175,6 +171,11 @@ interpretDia
 interpretDia dExp =
   interpret dExp (as :: QDiagram b v n Any) `catchAll`
   const (interpret dExp (as :: IO (QDiagram b v n Any)) >>= liftIO)
+
+-- | Convenient function to turn a 'QDiagram' to its 'Result' using
+--   'BuildOpts'. The 'postProcess' is not applied.
+diaResult :: Backend' b v n => BuildOpts b v n -> QDiagram b v n Any -> Result b v n
+diaResult bopts = renderDia (backendToken bopts) (bopts ^. backendOpts)
 
 ------------------------------------------------------------------------
 -- Build a diagram using a temporary file
@@ -254,7 +255,7 @@ buildDia (prepareOpts -> bopts) = case createModule Nothing bopts of
     diaHash <- hashModule bopts m
 
     let getDia = do
-          d <- runInterpreter $ interpretDiaModule bopts m
+          d <- runSandboxInterpreter $ interpretDiaModule bopts m
           return $ either InterpError (OK diaHash) d
 
     case bopts ^. hashCache of
@@ -264,6 +265,16 @@ buildDia (prepareOpts -> bopts) = case createModule Nothing bopts of
         if alreadyDone
           then return $ Skipped diaHash
           else getDia
+
+-- | Run an interpretor using sandbox from 'findSandbox'.
+runSandboxInterpreter :: (MonadMask m, MonadIO m, Functor m)
+                      => InterpreterT m a -> m (Either InterpreterError a)
+runSandboxInterpreter i = do
+  mSandbox <- liftIO $ findSandbox []
+  case mSandbox of
+    Just sandbox -> let args = ["-package-db", sandbox]
+                    in  unsafeRunInterpreterWithArgs args i
+    Nothing      -> runInterpreter i
 
 -- | Write a module to a temporary file and delete it when done. The
 --   module name is replaced by the temporary file's name (\"Diagram\").
@@ -332,7 +343,7 @@ getLocal m = tryExt "hs" `mplus` tryExt "lhs"
 -- | Pretty-print an @InterpreterError@.
 ppInterpError :: InterpreterError -> String
 ppInterpError (UnknownError err) = "UnknownError: " ++ err
-ppInterpError (WontCompile  es)  = unlines . nub . map errMsg $ es
+ppInterpError (WontCompile  es)  = unlines . nub $ map errMsg es
 ppInterpError (NotAllowed   err) = "NotAllowed: "   ++ err
 ppInterpError (GhcException err) = "GhcException: " ++ err
 
