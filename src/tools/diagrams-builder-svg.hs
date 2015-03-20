@@ -1,18 +1,19 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module Main where
 
 import           Diagrams.Backend.SVG
 import           Diagrams.Builder
 import           Diagrams.Prelude             hiding (height, width)
+import Lucid.Svg
 
 import qualified Data.ByteString.Lazy         as BS
 import           System.Console.CmdArgs
 import           System.Directory             (copyFile,
                                                createDirectoryIfMissing)
 import qualified System.FilePath              as FP
-import           Text.Blaze.Svg.Renderer.Utf8 (renderSvg)
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
@@ -20,7 +21,7 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  let bopts = mkBuildOpts SVG zero (SVGOptions (mkSizeSpec2D width height) Nothing)
+  let bopts = mkBuildOpts SVG zero (SVGOptions (mkSizeSpec2D width height) [] "" )
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.SVG" ]
                 & diaExpr  .~ expr
@@ -34,7 +35,7 @@ compileExample (Build{..}) = do
                        putStrLn (ppInterpError ierr)
     Skipped hash    -> copyFile (mkFile (hashToHexStr hash)) outFile
     OK hash svg     -> do let cached = mkFile (hashToHexStr hash)
-                          BS.writeFile cached (renderSvg svg)
+                          renderToFile cached svg
                           copyFile cached outFile
  where
    mkFile base = dir FP.</> base FP.<.> "svg"
