@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TupleSections         #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 
 -----------------------------------------------------------------------------
@@ -21,7 +22,7 @@ module Diagrams.Builder
        ( -- * Building diagrams
 
          -- ** Options
-         BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
+         BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, qimports, decideRegen, diaExpr, postProcess
 
          -- ** Regeneration decision functions and hashing
        , alwaysRegenerate, hashedRegenerate
@@ -43,6 +44,7 @@ module Diagrams.Builder
 
        ) where
 
+import           Control.Arrow                       (second)
 import           Control.Monad                       (guard, mplus, mzero)
 import           Control.Monad.Catch                 (MonadMask, catchAll)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
@@ -87,22 +89,24 @@ setDiagramImports
   => String
      -- ^ Filename of the module containing the diagrams
 
-  -> [String]
-     -- ^ Additional necessary imports. @Prelude@, @Diagrams.Prelude@,
-     --   @Diagrams.Core.Types@, and @Data.Monoid@ are included by
-     --   default.
+  -> [(String, Maybe String)]
+     -- ^ Additional necessary imports, along with qualified names.
+     --   @Prelude@, @Diagrams.Prelude@, @Diagrams.Core.Types@, and
+     --   @Data.Monoid@ are included (unqualified) by default.
 
   -> m ()
 
 setDiagramImports m imps = do
     loadModules [m]
     setTopLevelModules [takeBaseName m]
-    setImports $ [ "Prelude"
-                 , "Diagrams.Prelude"
-                 , "Diagrams.Core.Types"
-                 , "Data.Monoid"
-                 ]
-                 ++ imps
+    setImportsQ $
+      map (, Nothing)
+        [ "Prelude"
+        , "Diagrams.Prelude"
+        , "Diagrams.Core.Types"
+        , "Data.Monoid"
+        ]
+        ++ imps
 
 -- | Run an interpretor using sandbox from 'findSandbox'.
 runSandboxInterpreter :: (MonadMask m, MonadIO m, Functor m)
@@ -135,7 +139,8 @@ interpretDiagram bopts m = do
 
   runSandboxInterpreter $ do
 
-    setDiagramImports m (bopts ^. imports)
+    setDiagramImports m $
+      map (,Nothing) (bopts ^. imports) ++ map (second Just) (bopts ^. qimports)
     let dexp = bopts ^. diaExpr
 
     -- Try interpreting the diagram expression at two types: Diagram

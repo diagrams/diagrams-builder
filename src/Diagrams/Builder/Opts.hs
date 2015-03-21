@@ -20,7 +20,7 @@ module Diagrams.Builder.Opts
     ( -- * Options
 
       Hash
-    , BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, decideRegen, diaExpr, postProcess
+    , BuildOpts(..), mkBuildOpts, backendOpts, snippets, pragmas, imports, qimports, decideRegen, diaExpr, postProcess
 
       -- * Rebuilding
 
@@ -34,7 +34,7 @@ import           System.Directory (getDirectoryContents)
 import           System.FilePath  (takeBaseName)
 import           Text.Printf
 
-import           Diagrams.Prelude (QDiagram, Options, Any)
+import           Diagrams.Prelude (Any, Options, QDiagram)
 
 -- | Synonym for more perspicuous types.
 --
@@ -66,6 +66,7 @@ data BuildOpts b v n
     , _snippets    :: [String]
     , _pragmas     :: [String]
     , _imports     :: [String]
+    , _qimports    :: [(String, String)]
     , _decideRegen :: Hash -> IO (Maybe (Options b v n -> Options b v n))
     , _diaExpr     :: String
     , _postProcess :: QDiagram b v n Any -> QDiagram b v n Any
@@ -88,7 +89,7 @@ makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
 --   * no postprocessing
 mkBuildOpts :: b -> v n -> Options b v n -> BuildOpts b v n
 mkBuildOpts b v opts
-  = BuildOpts b v opts [] [] [] alwaysRegenerate "circle 1" id
+  = BuildOpts b v opts [] [] [] [] alwaysRegenerate "circle 1" id
 
 -- | Backend-specific options to use.
 backendOpts :: Lens' (BuildOpts b v n) (Options b v n)
@@ -106,6 +107,10 @@ pragmas :: Lens' (BuildOpts b v n) [String]
 -- | Additional module imports (note that "Diagrams.Prelude" is
 --   automatically imported).
 imports :: Lens' (BuildOpts b v n) [String]
+
+-- | Additional qualified module imports (module name, qualified
+--   name).
+qimports :: Lens' (BuildOpts b v n) [(String, String)]
 
 -- | A function to decide whether a particular diagram needs to be
 --   regenerated.  It will be passed a hash of the final assembled
