@@ -208,7 +208,11 @@
     \ifdtt@ForceShellEscape
         \dtt@ShellEscapetrue
     \fi
-    \immediate\write18{mkdir -p \dtt@outputdir}
+    \ifwindows
+      \immediate\write18{if not exist \dtt@outputdir\space mkdir \dtt@outputdir}
+    \else
+      \immediate\write18{mkdir -p \dtt@outputdir}
+    \fi
     \xdef\diagramslatexCutFile{\dtt@figname.hs}
     \diagramslatexverbatimwrite{\diagramslatexCutFile}}
     {\enddiagramslatexverbatimwrite%
