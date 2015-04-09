@@ -9,7 +9,7 @@ env:
     - CABALVER=1.22
     - UBUNTU_PKGS="libgtk-3-dev libcairo2-dev"
     - EXTRA_DEPS_PRE="gtk2hs-buildtools"
-    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific"
+    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific active dual-tree monoid-extras statestack solve"
     - CABAL_FLAGS="-fcairo -fsvg -fps -frasterific"
 
 matrix:
