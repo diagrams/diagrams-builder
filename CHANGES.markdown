@@ -1,7 +1,15 @@
+0.7
+----------------------
+
+- Update to `diagrams-lib-1.3`.
+- Add `diagrams-rasterific` support.
+- Add support for `DIAGRAMS_SANDBOX` environment variable.
+- Allow `exceptions-0.8`
+
 0.6.0.4 (2 April 2015)
 ----------------------
 
- - allow `lens-4.9`
+- allow `lens-4.9`
 
 0.6.0.3 (13 Jan 2015)
 ---------------------
@@ -18,7 +26,7 @@
 ------------------------
 
   - Allow lens-4.4
-    
+
 0.6 (5 June 2014)
 -----------------
 
