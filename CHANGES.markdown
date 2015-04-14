@@ -5,6 +5,7 @@
 - Add `diagrams-rasterific` support.
 - Add support for `DIAGRAMS_SANDBOX` environment variable.
 - Allow `exceptions-0.8`
+- Fix `diagrams-latex` directory creation on Windows
 
 0.6.0.4 (2 April 2015)
 ----------------------
