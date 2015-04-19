@@ -1,5 +1,5 @@
-0.7
-----------------------
+0.7 (19 April 2015)
+-------------------
 
 - Update to `diagrams-lib-1.3`.
 - Add `diagrams-rasterific` support.
