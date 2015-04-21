@@ -2,15 +2,15 @@
 {-# LANGUAGE RecordWildCards    #-}
 
 module Main where
-import qualified Codec.Picture as J
+import qualified Codec.Picture               as J
 import           Diagrams.Backend.Rasterific
-import           Diagrams.Prelude             hiding (height, width)
+import           Diagrams.Prelude            hiding (height, width)
 
 import           Diagrams.Builder
 
-import           System.Directory             (copyFile,
-                                               createDirectoryIfMissing)
-import qualified System.FilePath              as FP
+import           System.Directory            (copyFile,
+                                              createDirectoryIfMissing)
+import qualified System.FilePath             as FP
 
 import           System.Console.CmdArgs
 
