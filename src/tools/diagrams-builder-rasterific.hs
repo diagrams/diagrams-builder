@@ -28,9 +28,9 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  let w = fmap realToFrac width
-      h = fmap realToFrac height
-      bopts = mkBuildOpts Rasterific zero (RasterificOptions (mkSizeSpec2D w h))
+  let w = fmap realToFrac width :: Maybe Float
+      h = fmap realToFrac height :: Maybe Float
+      bopts = mkBuildOpts Rasterific (zero :: V2 Float) (RasterificOptions (mkSizeSpec2D w h))
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.Rasterific" ]
                 & diaExpr  .~ expr
