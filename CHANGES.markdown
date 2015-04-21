@@ -1,3 +1,8 @@
+0.7.0.1 (20 April 2015)
+-----------------------
+
+- Fix compilation errors in diagrams-builder-rasterific executable
+
 0.7 (19 April 2015)
 -------------------
 
