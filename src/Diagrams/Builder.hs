@@ -51,6 +51,8 @@ import           Data.Hashable                       (Hashable (..))
 import           Data.List                           (foldl', nub)
 import           Data.List.Split                     (splitOn)
 import           Data.Maybe                          (catMaybes)
+-- for Typeable Any instance
+import           Data.Orphans
 import           System.Directory                    (doesFileExist,
                                                       getTemporaryDirectory,
                                                       removeFile)
@@ -68,8 +70,6 @@ import           Diagrams.Builder.Modules
 import           Diagrams.Builder.Opts
 import           Diagrams.Prelude
 import           Language.Haskell.Interpreter.Unsafe (unsafeRunInterpreterWithArgs)
-
-deriving instance Typeable Any
 
 ------------------------------------------------------------
 -- Interpreting diagrams
