@@ -1,3 +1,9 @@
+0.7.0.4 (1 June 2015)
+---------------------
+
+- `diagrams-builder-svg` now builds again (does not build in any other
+  `0.7.0.x` releases)
+
 0.7.0.3 (1 June 2015)
 ---------------------
 
