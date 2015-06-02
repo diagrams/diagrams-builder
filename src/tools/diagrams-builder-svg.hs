@@ -1,19 +1,18 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE RecordWildCards    #-}
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RecordWildCards    #-}
 
 module Main where
 
 import           Diagrams.Backend.SVG
 import           Diagrams.Builder
-import           Diagrams.Prelude             hiding (height, width)
-import Lucid.Svg
+import           Diagrams.Prelude       hiding (height, width)
+import           Lucid.Svg
 
-import qualified Data.ByteString.Lazy         as BS
+import qualified Data.ByteString.Lazy   as BS
 import           System.Console.CmdArgs
-import           System.Directory             (copyFile,
-                                               createDirectoryIfMissing)
-import qualified System.FilePath              as FP
+import           System.Directory       (copyFile, createDirectoryIfMissing)
+import qualified System.FilePath        as FP
 
 compileExample :: Build -> IO ()
 compileExample (Build{..}) = do
