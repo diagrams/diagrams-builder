@@ -9,7 +9,6 @@ import           Diagrams.Builder
 import           Diagrams.Prelude       hiding (height, width)
 import           Lucid.Svg
 
-import qualified Data.ByteString.Lazy   as BS
 import           System.Console.CmdArgs
 import           System.Directory       (copyFile, createDirectoryIfMissing)
 import qualified System.FilePath        as FP
