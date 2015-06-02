@@ -20,7 +20,7 @@ compileExample (Build{..}) = do
 
   createDirectoryIfMissing True dir
 
-  let bopts = mkBuildOpts SVG zero (SVGOptions (mkSizeSpec2D width height) [] "" )
+  let bopts = mkBuildOpts SVG zero (SVGOptions (mkSizeSpec2D width height) Nothing "" )
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.SVG" ]
                 & diaExpr  .~ expr
