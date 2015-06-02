@@ -52,7 +52,7 @@ import           Data.List                           (foldl', nub)
 import           Data.List.Split                     (splitOn)
 import           Data.Maybe                          (catMaybes)
 -- for Typeable Any instance
-import           Data.Orphans
+import           Data.Orphans                        ()
 import           System.Directory                    (doesFileExist,
                                                       getTemporaryDirectory,
                                                       removeFile)
