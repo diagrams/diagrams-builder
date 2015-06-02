@@ -1,3 +1,8 @@
+0.7.0.3 (1 June 2015)
+---------------------
+
+- get `Typeable Any` instance from `base-orphans` package
+
 [v0.7.0.2](https://github.com/diagrams/diagrams-builder/tree/v0.7.0.2) (2015-05-26)
 -----------------------------------------------------------------------------------
 
