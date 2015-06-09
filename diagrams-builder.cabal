@@ -94,6 +94,11 @@ flag rasterific
   default:     False
   manual:      True
 
+flag pgf
+  description: install PGF-specific builder tool
+  default:     False
+  manual:      True
+
 executable diagrams-builder-cairo
   main-is:             diagrams-builder-cairo.hs
   hs-source-dirs:      src/tools
@@ -175,3 +180,24 @@ executable diagrams-builder-rasterific
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.8 && < 4.12,
                        JuicyPixels >= 3.1.5 && < 3.3
+
+executable diagrams-builder-pgf
+  main-is:             diagrams-builder-pgf.hs
+  hs-source-dirs:      src/tools
+  default-language:    Haskell2010
+  other-extensions:    DeriveDataTypeable
+                       RecordWildCards
+
+  if !flag(pgf)
+    buildable: False
+
+  if flag(pgf)
+    build-depends:     base >= 4 && < 5,
+                       filepath,
+                       directory,
+                       diagrams-builder,
+                       diagrams-lib >= 0.6 && < 1.4,
+                       diagrams-pgf,
+                       bytestring >= 0.10.2 && < 0.11,
+                       cmdargs >= 0.6 && < 0.11,
+                       lens >= 3.8 && < 4.12
