@@ -88,6 +88,9 @@
 \def\dtt@backend{cairo}  % use cairo as the default backend
 \DeclareOptionX{extension}[]{\def\dtt@extension{#1}}
 \def\dtt@extension{pdf}  % default output extension of .pdf
+\newif\ifdtt@input \dtt@inputfalse
+\DeclareOptionX{input}{\dtt@inputtrue}
+\DeclareOptionX{noinput}{\dtt@inputfalse}
 
 \ExecuteOptionsX{shell}
 
@@ -234,7 +237,13 @@
 }
 
 \long\gdef\diagramslatexgraphicsinclude{\diagramslatexgraphicsprocess%
-    \IfFileExists{\dtt@figname.\dtt@extension}{{\includegraphics{\dtt@figname.\dtt@extension}}}
+    \IfFileExists{\dtt@figname.\dtt@extension}{
+      \ifdtt@input
+        {\input{\dtt@figname.\dtt@extension}}
+      \else
+        {\includegraphics{\dtt@figname.\dtt@extension}}
+      \fi
+    }
     {\PackageWarningNoLine{diagrams-latex}
             {Please convert \dtt@figname.hs manually}}
 }
