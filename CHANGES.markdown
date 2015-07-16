@@ -1,3 +1,11 @@
+0.7.1 (16 June 2015)
+--------------------
+
+- allow `base-orphans-0.4`
+- add `diagrams-pgf` executable
+- add diagrams-latex option to use \input instead of \includegraphics,
+  for use with diagrams-pgf
+
 0.7.0.4 (1 June 2015)
 ---------------------
 
