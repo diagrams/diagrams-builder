@@ -59,7 +59,7 @@ library
                        split >= 0.2 && < 0.3,
                        haskell-src-exts >= 1.16 && < 1.17,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.12,
+                       lens >= 4.0 && < 4.13,
                        hashable >= 1.1 && < 1.3,
                        exceptions >= 0.3 && < 0.9
   hs-source-dirs:      src
@@ -117,7 +117,7 @@ executable diagrams-builder-cairo
                        diagrams-lib >= 1.3 && < 1.4,
                        diagrams-cairo >= 1.3 && < 1.4,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.12
+                       lens >= 4.0 && < 4.13
 
 executable diagrams-builder-svg
   main-is:             diagrams-builder-svg.hs
@@ -158,7 +158,7 @@ executable diagrams-builder-ps
                        diagrams-lib >= 0.6 && < 1.4,
                        diagrams-postscript >= 0.6 && < 1.4,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.12
+                       lens >= 3.8 && < 4.13
 
 executable diagrams-builder-rasterific
   main-is:             diagrams-builder-rasterific.hs
@@ -178,7 +178,7 @@ executable diagrams-builder-rasterific
                        diagrams-lib >= 0.6 && < 1.4,
                        diagrams-rasterific >= 1.3 && < 1.4,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.12,
+                       lens >= 3.8 && < 4.13,
                        JuicyPixels >= 3.1.5 && < 3.3
 
 executable diagrams-builder-pgf
@@ -200,4 +200,4 @@ executable diagrams-builder-pgf
                        diagrams-pgf,
                        bytestring >= 0.10.2 && < 0.11,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.12
+                       lens >= 3.8 && < 4.13
