@@ -1,3 +1,7 @@
+## [v0.7.1.1](https://github.com/diagrams/diagrams-builder/tree/v0.7.1.1) (2015-07-19)
+
+[Full Changelog](https://github.com/diagrams/diagrams-builder/compare/v0.7.1...v0.7.1.1)
+
 0.7.1 (16 June 2015)
 --------------------
 
