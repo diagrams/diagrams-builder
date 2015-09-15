@@ -188,7 +188,7 @@ buildDiagram
 buildDiagram bopts = do
   let bopts' = bopts
              & snippets %~ map unLit
-             & pragmas  %~ (["NoMonomorphismRestriction", "TypeFamilies"] ++)
+             & pragmas  %~ (["NoMonomorphismRestriction", "TypeFamilies", "FlexibleContexts"] ++)
              & imports  %~ ("Diagrams.Prelude" :)
   case createModule Nothing bopts' of
     Left  err -> return (ParseErr err)
