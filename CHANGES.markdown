@@ -1,3 +1,12 @@
+## [v0.7.2.0](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.0) (2015-09-22)
+
+- allow `lens-4.13`
+- Add `TypeFamilies` and `FlexibleContexts` extensions automatically
+  to diagrams code, so users do not have to add them manually when
+  building with GHC 7.10
+
+[Full Changelog](https://github.com/diagrams/diagrams-builder/compare/v0.7.1.1...v0.7.2.0)
+
 ## [v0.7.1.1](https://github.com/diagrams/diagrams-builder/tree/v0.7.1.1) (2015-07-19)
 
 [Full Changelog](https://github.com/diagrams/diagrams-builder/compare/v0.7.1...v0.7.1.1)
