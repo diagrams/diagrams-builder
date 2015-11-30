@@ -23,7 +23,7 @@ addons:
 
 env:
   global:
-    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific active dual-tree monoid-extras statestack diagrams-solve"
+    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific diagrams-pgf active dual-tree monoid-extras statestack diagrams-solve"
     - STACK_YAML='travis-stack.yaml'
 
 install:
