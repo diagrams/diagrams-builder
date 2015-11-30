@@ -7,8 +7,8 @@ before_install:
   - export PATH=~/.local/bin:$PATH
   - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
   - git clone -b stack http://github.com/diagrams/diagrams-travis travis
-  - stack install gtk2hs-buildtools
   - ./travis/scripts/git_deps.sh
+  - stack install gtk2hs-buildtools
 
 addons:
   apt:
