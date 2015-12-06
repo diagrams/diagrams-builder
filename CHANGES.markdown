@@ -1,3 +1,7 @@
+## [v0.7.2.1](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.1) (2015-12-06)
+
+- allow `haskell-src-exts-1.17.*`
+
 ## [v0.7.2.0](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.0) (2015-09-22)
 
 - allow `lens-4.13`
