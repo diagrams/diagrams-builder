@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Builder.Modules
@@ -11,10 +13,13 @@
 
 module Diagrams.Builder.Modules where
 
+import           Control.Arrow                (second)
 import           Control.Lens                 ((^.))
 import           Data.Function                (on)
+import           Data.Functor                 ((<$>))
 import           Data.List                    (foldl', groupBy, isPrefixOf, nub,
                                                sortBy)
+import           Data.Maybe                   (isJust)
 import           Data.Ord                     (comparing)
 
 import           Language.Haskell.Exts
@@ -43,7 +48,7 @@ createModule nm opts = do
     . deleteExports
     . maybe id replaceModuleName nm
     . addPragmas (opts ^. pragmas)
-    . addImports (opts ^. imports)
+    . addImports (map (,Nothing) (opts ^. imports) ++ map (second Just) (opts ^. qimports))
     . foldl' combineModules emptyModule
     $ ms
 
@@ -88,12 +93,16 @@ addPragmas langs (Module l n p w e i d) = Module l n (f p) w e i d
         f (x : rest) = x : f rest
 
 -- | Add some imports to a module if necessary.
-addImports :: [String] -> Module -> Module
+addImports :: [(String, Maybe String)] -> Module -> Module
 addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imps) d
-  where addImport imp is
-          | any ((==imp) . getModuleName . importModule) is = is
-          | otherwise = ImportDecl noLoc (ModuleName imp) False False False
-                                   Nothing Nothing Nothing : is
+  where addImport (imp, mq) is
+          | any (sameImport imp mq) is = is
+          | otherwise = ImportDecl noLoc (ModuleName imp) (isJust mq) False False
+                                   Nothing (ModuleName <$> mq) Nothing : is
+        sameImport imp mq imp' =
+             ((==imp) . getModuleName . importModule) imp'
+          && (isJust mq == importQualified imp')
+          && ((ModuleName <$> mq) == importAs imp')
 
 -- | Combine two modules into one, with a left bias in the case of
 --   things that can't be sensibly combined (/e.g./ the module name).
