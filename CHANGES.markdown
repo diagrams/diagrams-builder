@@ -1,3 +1,7 @@
+## [v0.7.2.3](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.3) (2016-03-19)
+
+- allow `hint-0.5`
+
 ## [v0.7.2.2](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.2) (2016-01-16)
 
 - allow `base-orphans-0.5`
