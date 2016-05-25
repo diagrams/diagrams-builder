@@ -103,7 +103,6 @@ setDiagramImports m imps = do
       map (, Nothing)
         [ "Prelude"
         , "Diagrams.Prelude"
-        , "Diagrams.Core.Types"
         , "Data.Monoid"
         ]
         ++ imps
