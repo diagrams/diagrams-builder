@@ -58,6 +58,7 @@
 \ProvidesPackage{diagrams-latex}[2012/04/07 v0.1 Generate diagrams embedded within LaTeX]
 \RequirePackage{moreverb}
 \RequirePackage{xkeyval}[2005/02/22]
+\RequirePackage{ifthen}
 
 \newif\ifdtt@ShellEscape
 %\newif\ifmiktex \miktexfalse
@@ -87,7 +88,6 @@
 \DeclareOptionX{backend}[]{\def\dtt@backend{#1}}
 \def\dtt@backend{cairo}  % use cairo as the default backend
 \DeclareOptionX{extension}[]{\def\dtt@extension{#1}}
-\def\dtt@extension{pdf}  % default output extension of .pdf
 \newif\ifdtt@input \dtt@inputfalse
 \DeclareOptionX{input}{\dtt@inputtrue}
 \DeclareOptionX{noinput}{\dtt@inputfalse}
@@ -96,6 +96,16 @@
 
 \ProcessOptionsX\relax
 
+%% Handle option defaults for backends
+
+\ifthenelse{\equal{\dtt@backend}{cairo} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{pdf}}{}
+\ifthenelse{\equal{\dtt@backend}{pgf} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{pgf}}{}
+\ifthenelse{\equal{\dtt@backend}{ps} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{eps}}{}
+
+\ifthenelse{\equal{\dtt@backend}{pgf}}{\dtt@inputtrue}{}
 
 %% The platform detection code is copied from the ifplatform package
 %% avaialable from: http://tug.ctan.org/tex-archive/macros/latex/contrib/ifplatform/
