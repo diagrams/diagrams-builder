@@ -22,6 +22,7 @@ compileExample (Build{..}) = do
       standalone = case ext of
                      ".pgf" -> False
                      ".tex" -> True
+                     _      -> False
   f   <- readFile srcFile
 
   createDirectoryIfMissing True dir
