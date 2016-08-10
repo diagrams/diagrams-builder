@@ -55,11 +55,11 @@ library
                        hint >= 0.4 && < 0.6,
                        directory,
                        filepath,
-                       transformers >= 0.3 && < 0.5,
+                       transformers >= 0.3 && < 0.6,
                        split >= 0.2 && < 0.3,
                        haskell-src-exts >= 1.16 && < 1.18,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.14,
+                       lens >= 4.0 && < 4.15,
                        hashable >= 1.1 && < 1.3,
                        exceptions >= 0.3 && < 0.9
   hs-source-dirs:      src
