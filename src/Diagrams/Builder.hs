@@ -63,8 +63,7 @@ import           System.FilePath                     (takeBaseName, (<.>),
 import           System.IO                           (hClose, hPutStr,
                                                       openTempFile)
 
-import           Language.Haskell.Exts               (ImportDecl, Module (..),
-                                                      importModule, prettyPrint)
+import           Language.Haskell.Exts.Simple
 import           Language.Haskell.Interpreter        hiding (ModuleName)
 
 import           Diagrams.Builder.CmdLine
@@ -196,7 +195,7 @@ buildDiagram bopts = do
              & imports  %~ ("Diagrams.Prelude" :)
   case createModule Nothing bopts' of
     Left  err -> return (ParseErr err)
-    Right m@(Module _ _ _ _ _ srcImps _) -> do
+    Right m@(Module _ _ srcImps _) -> do
       liHash <- hashLocalImports srcImps
       let diaHash
             = 0 `hashWithSalt` prettyPrint m
