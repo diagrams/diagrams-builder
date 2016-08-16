@@ -7,7 +7,7 @@ module Main where
 import           Diagrams.Backend.SVG
 import           Diagrams.Builder
 import           Diagrams.Prelude       hiding (height, width)
-import           Lucid.Svg
+import           Graphics.SVG
 
 import           System.Console.CmdArgs
 import           System.Directory       (copyFile, createDirectoryIfMissing)
