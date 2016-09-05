@@ -1,3 +1,14 @@
+## [v0.7.2.4](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.4) (2016-09-05)
+
+Update upper bounds, and build with GHC 8.  Allow:
+
+- `transformers-0.5`
+- `lens-4.14`
+- `base-4.9`
+- `hint-0.6`
+
+Now requires `diagrams-svg-1.4` and `svg-builder`.
+
 ## [v0.7.2.3](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.3) (2016-03-19)
 
 - allow `hint-0.5`
