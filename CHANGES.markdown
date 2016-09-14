@@ -1,3 +1,13 @@
+## [v0.8](https://github.com/diagrams/diagrams-builder/tree/v0.8) (XXX)
+
+- Require `haskell-src-exts-1.18` and `haskell-src-exts-simple`
+- `diagrams-builder-pgf`: add catch-all case for file extension
+- Better defaults ([#29](https://github.com/diagrams/diagrams-builder/issues/29)):
+    - default extension will be chosen based on backend
+    - `input` option automatically selected when using `pgf` backend
+    - `diagrams` is now default output directory
+- Modules [can now be imported qualified](https://github.com/diagrams/diagrams-builder/pull/17)
+
 ## [v0.7.2.4](https://github.com/diagrams/diagrams-builder/tree/v0.7.2.4) (2016-09-05)
 
 Update upper bounds, and build with GHC 8.  Allow:
