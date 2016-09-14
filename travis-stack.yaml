@@ -26,6 +26,7 @@ extra-deps:
   - haskell-src-exts-simple-1.18.0.1.1
   - QuickCheck-2.9.1       # lts 6.11 has 2.8.2
   - optparse-applicative-0.13.0.0
+  - tasty-0.11.0.4         # for optparse-0.13
 
 # Override default flag values for local packages and extra-deps
 flags:
