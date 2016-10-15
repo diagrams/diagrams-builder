@@ -1,5 +1,6 @@
 ## [v0.8](https://github.com/diagrams/diagrams-builder/tree/v0.8) (XXX)
 
+- allow `lens-4.15`
 - Require `haskell-src-exts-1.18` and `haskell-src-exts-simple`
 - `diagrams-builder-pgf`: add catch-all case for file extension
 - Better defaults ([#29](https://github.com/diagrams/diagrams-builder/issues/29)):
