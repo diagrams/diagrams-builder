@@ -1,4 +1,4 @@
-## [v0.8](https://github.com/diagrams/diagrams-builder/tree/v0.8) (XXX)
+## [v0.8](https://github.com/diagrams/diagrams-builder/tree/v0.8) (2016-10-26)
 
 - `diagrams-builder-pgf`: add catch-all case for file extension
 - Better defaults ([#29](https://github.com/diagrams/diagrams-builder/issues/29)):
