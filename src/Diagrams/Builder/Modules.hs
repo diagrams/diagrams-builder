@@ -1,3 +1,14 @@
+-- Module SrcLoc ModuleName [ModulePragma] (Maybe WarningText) (Maybe [ExportSpec]) [ImportDecl] [Decl]
+--
+-- Module :: Maybe ModuleHead -> [ModulePragma] -> [ImportDecl] -> [Decl] -> Module
+-- ModuleHead :: ModuleName -> Maybe WarningText -> Maybe ExportSpecList -> ModuleHead
+
+-- so (Module sl *mn ps *w *exp imp decl)
+--
+-- -> Module (Just (ModuleHead mn w exp)) ps imp decl
+
+{-# LANGUAGE TupleSections #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Builder.Modules
@@ -11,14 +22,16 @@
 
 module Diagrams.Builder.Modules where
 
+import           Control.Arrow                (second)
 import           Control.Lens                 ((^.))
 import           Data.Function                (on)
+import           Data.Functor                 ((<$>))
 import           Data.List                    (foldl', groupBy, isPrefixOf, nub,
                                                sortBy)
+import           Data.Maybe                   (isJust)
 import           Data.Ord                     (comparing)
 
-import           Language.Haskell.Exts
-import           Language.Haskell.Exts.SrcLoc (noLoc)
+import           Language.Haskell.Exts.Simple
 
 import           Diagrams.Builder.Opts
 
@@ -35,7 +48,7 @@ import           Diagrams.Builder.Opts
 --   Returns the updated module, or an error message if parsing
 --   failed.
 createModule :: Maybe String -- ^ Module name to use
-             -> BuildOpts b v n
+             -> BuildOpts b
              -> Either String Module
 createModule nm opts = do
   ms <- mapM doModuleParse (opts ^. snippets)
@@ -43,12 +56,12 @@ createModule nm opts = do
     . deleteExports
     . maybe id replaceModuleName nm
     . addPragmas (opts ^. pragmas)
-    . addImports (opts ^. imports)
+    . addImports (map (,Nothing) (opts ^. imports) ++ map (second Just) (opts ^. qimports))
     . foldl' combineModules emptyModule
     $ ms
 
 emptyModule :: Module
-emptyModule = Module noLoc (ModuleName "Main") [] Nothing Nothing [] []
+emptyModule = Module (Just (ModuleHead (ModuleName "Main") Nothing Nothing)) [] [] []
 
 -- | Run the haskell-src-exts parser on a @String@ representing some
 --   Haskell code, producing a @Module@ or an error message.
@@ -56,7 +69,7 @@ doModuleParse :: String -> Either String Module
 doModuleParse src =
   case parseFileContentsWithMode parseMode src of
     ParseFailed sloc err -> Left (prettyPrint sloc ++ ": " ++ err)
-    ParseOk m            -> return m
+    ParseOk m         -> return m
   where
     parseMode
       = defaultParseMode
@@ -74,26 +87,35 @@ unLit src
 
 -- | Replace the name of a module.
 replaceModuleName :: String -> Module -> Module
-replaceModuleName m (Module l _ p w e i d) = Module l (ModuleName m) p w e i d
+replaceModuleName m (Module Nothing p i d)
+  = Module (Just (ModuleHead (ModuleName m) Nothing Nothing)) p i d
+replaceModuleName m (Module (Just (ModuleHead _ w e)) p i d)
+  = Module (Just (ModuleHead (ModuleName m) w e)) p i d
 
 -- | Delete module exports.
 deleteExports :: Module -> Module
-deleteExports (Module l n p w _ i d) = Module l n p w Nothing i d
+deleteExports m@(Module Nothing _ _ _) = m
+deleteExports (Module (Just (ModuleHead n w _)) p i d)
+  = Module (Just (ModuleHead n w Nothing)) p i d
 
 -- | Add some @LANGUAGE@ pragmas to a module if necessary.
 addPragmas :: [String] -> Module -> Module
-addPragmas langs (Module l n p w e i d) = Module l n (f p) w e i d
-  where f [] = [LanguagePragma noLoc (map Ident langs)]
-        f (LanguagePragma lpLoc ps : rest) = LanguagePragma lpLoc (ps ++ map Ident langs) : rest
+addPragmas langs (Module h p i d) = Module h (f p) i d
+  where f [] = [LanguagePragma (map Ident langs)]
+        f (LanguagePragma ps : rest) = LanguagePragma (ps ++ map Ident langs) : rest
         f (x : rest) = x : f rest
 
 -- | Add some imports to a module if necessary.
-addImports :: [String] -> Module -> Module
-addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imps) d
-  where addImport imp is
-          | any ((==imp) . getModuleName . importModule) is = is
-          | otherwise = ImportDecl noLoc (ModuleName imp) False False False
-                                   Nothing Nothing Nothing : is
+addImports :: [(String, Maybe String)] -> Module -> Module
+addImports imps (Module h p i d) = Module h p (foldr addImport i imps) d
+  where addImport (imp, mq) is
+          | any (sameImport imp mq) is = is
+          | otherwise = ImportDecl (ModuleName imp) (isJust mq) False False
+                                   Nothing (ModuleName <$> mq) Nothing : is
+        sameImport imp mq imp' =
+             ((==imp) . getModuleName . importModule) imp'
+          && (isJust mq == importQualified imp')
+          && ((ModuleName <$> mq) == importAs imp')
 
 -- | Combine two modules into one, with a left bias in the case of
 --   things that can't be sensibly combined (/e.g./ the module name).
@@ -101,9 +123,9 @@ addImports imps (Module l n p w e i d) = Module l n p w e (foldr addImport i imp
 --   different import specifications (qualification, hiding, explicit
 --   import) is unlikely to work sensibly.
 combineModules :: Module -> Module -> Module
-combineModules (Module l1 n1 ps1 w1 e1 i1 d1)
-               (Module _  _  ps2 _  _  i2 d2) =
-    Module l1 n1 combinedPragmas w1 e1 combinedImports (d1 ++ d2)
+combineModules (Module h ps1 i1 d1)
+               (Module _ ps2 i2 d2) =
+    Module h combinedPragmas combinedImports (d1 ++ d2)
   where
     combinedPragmas = combinedLangPragmas ++ otherPragmas ps1 ++ otherPragmas ps2
     combinedImports = map head
@@ -112,11 +134,11 @@ combineModules (Module l1 n1 ps1 w1 e1 i1 d1)
                     $ i1 ++ i2
 
     combinedLangPragmas
-      = [LanguagePragma noLoc (nub (getLangPragmas ps1 ++ getLangPragmas ps2))]
+      = [LanguagePragma (nub (getLangPragmas ps1 ++ getLangPragmas ps2))]
 
     getLangPragmas = concatMap getLangPragma
-    getLangPragma (LanguagePragma _ ns) = ns
-    getLangPragma _                     = []
+    getLangPragma (LanguagePragma ns) = ns
+    getLangPragma _                   = []
 
     otherPragmas = filter (not . isLangPragma)
     isLangPragma (LanguagePragma {}) = True

@@ -43,20 +43,21 @@ library
                        Diagrams.Builder.Opts
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
-  build-depends:       base >=4.2 && < 4.8,
-                       mtl >= 2.1 && < 2.3,
-                       diagrams-lib >= 1.2 && < 1.3,
-                       hint >= 0.4 && < 0.5,
+  build-depends:       base,
+                       mtl,
+                       diagrams,
+                       hint,
                        directory,
                        filepath,
-                       transformers >= 0.3 && < 0.5,
-                       split >= 0.2 && < 0.3,
-                       haskell-src-exts >= 1.16 && < 1.17,
-                       cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.7,
-                       hashable >= 1.1 && < 1.3,
-                       exceptions >= 0.3 && < 0.7,
-                       temporary >= 1.2 && < 1.3
+                       transformers,
+                       haskell-src-exts,
+                       haskell-src-exts-simple,
+                       split,
+                       lens,
+                       hashable,
+                       exceptions,
+                       optparse-applicative,
+                       temporary
   hs-source-dirs:      src
   default-language:    Haskell2010
   other-extensions:    StandaloneDeriving,
