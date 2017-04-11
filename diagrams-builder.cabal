@@ -49,7 +49,7 @@ library
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
   build-depends:       base >=4.2 && < 4.10,
-                       base-orphans >= 0.3 && < 0.6,
+                       base-orphans >= 0.3 && < 0.7,
                        mtl >= 2.1 && < 2.3,
                        diagrams-lib >= 1.4 && < 1.5,
                        hint >= 0.4 && < 0.7,
