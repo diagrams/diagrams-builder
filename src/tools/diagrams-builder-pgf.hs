@@ -15,6 +15,7 @@ import           Diagrams.Prelude            hiding (height, width)
 import           System.Directory            (copyFile,
                                               createDirectoryIfMissing,
                                               getCurrentDirectory,
+                                              getDirectoryContents,
                                               canonicalizePath)
 import System.Texrunner
 import qualified System.FilePath             as FP
@@ -35,11 +36,17 @@ compileExample (Build{..}) = do
 
   let w = fmap realToFrac width :: Maybe Double
       h = fmap realToFrac height :: Maybe Double
+      hashedRegenerate' hash = do
+        let hashFile = hashToHexStr hash FP.<.> ext
+        files <- getDirectoryContents dir
+        case any (hashFile ==) files of
+            True  -> return Nothing
+            False -> return $ Just id
       bopts = mkBuildOpts PGF (zero :: V2 Double) (PGFOptions def (mkSizeSpec2D w h) False standalone)
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.PGF" ]
                 & diaExpr  .~ expr
-                & decideRegen .~ (hashedRegenerate (\_ opts -> opts) dir)
+                & decideRegen .~ hashedRegenerate'
 
   res <- buildDiagram bopts
   case res of
