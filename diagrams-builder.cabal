@@ -201,4 +201,5 @@ executable diagrams-builder-pgf
                        diagrams-pgf >= 1.4 && < 1.5,
                        bytestring >= 0.10.2 && < 0.11,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.16
+                       lens >= 3.8 && < 4.16,
+                       texrunner

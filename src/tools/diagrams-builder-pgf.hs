@@ -1,17 +1,23 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE OverloadedStrings  #-}
 
 module Main where
 
 import qualified Data.ByteString.Builder     as BSB
-import qualified Data.ByteString.Lazy        as BSL
+import qualified Data.ByteString.Lazy.Char8  as BSL
+import qualified Data.ByteString.Char8       as BS
 import           Diagrams.Backend.PGF
 import           Diagrams.Backend.PGF.Render (Options (..))
 import           Diagrams.Builder
 import           Diagrams.Prelude            hiding (height, width)
 
 import           System.Directory            (copyFile,
-                                              createDirectoryIfMissing)
+                                              createDirectoryIfMissing,
+                                              getCurrentDirectory,
+                                              getDirectoryContents,
+                                              canonicalizePath)
+import System.Texrunner
 import qualified System.FilePath             as FP
 
 import           System.Console.CmdArgs      hiding (def)
@@ -22,6 +28,7 @@ compileExample (Build{..}) = do
       standalone = case ext of
                      ".pgf" -> False
                      ".tex" -> True
+                     ".pdf" -> True
                      _      -> False
   f   <- readFile srcFile
 
@@ -29,11 +36,17 @@ compileExample (Build{..}) = do
 
   let w = fmap realToFrac width :: Maybe Double
       h = fmap realToFrac height :: Maybe Double
+      hashedRegenerate' hash = do
+        let hashFile = hashToHexStr hash FP.<.> ext
+        files <- getDirectoryContents dir
+        case any (hashFile ==) files of
+            True  -> return Nothing
+            False -> return $ Just id
       bopts = mkBuildOpts PGF (zero :: V2 Double) (PGFOptions def (mkSizeSpec2D w h) False standalone)
                 & snippets .~ [f]
                 & imports  .~ [ "Diagrams.Backend.PGF" ]
                 & diaExpr  .~ expr
-                & decideRegen .~ (hashedRegenerate (\_ opts -> opts) dir)
+                & decideRegen .~ hashedRegenerate'
 
   res <- buildDiagram bopts
   case res of
@@ -41,9 +54,30 @@ compileExample (Build{..}) = do
     InterpErr ierr  -> putStrLn ("Error while compiling " ++ srcFile) >>
                        putStrLn (ppInterpError ierr)
     Skipped hash    -> copyFile (mkFile (hashToHexStr hash) ext) outFile
-    OK hash pgf -> let cached = mkFile (hashToHexStr hash) ext
-                   in do BSL.writeFile cached (BSB.toLazyByteString pgf)
-                         copyFile cached outFile
+    OK hash pgf -> do
+        let cached = mkFile (hashToHexStr hash) ext
+
+        case ext of
+            ".pdf" -> do
+                currentDir <- getCurrentDirectory
+                targetDir  <- canonicalizePath (FP.takeDirectory cached)
+
+                let source = BSB.toLazyByteString pgf
+
+                (_, texLog, mPDF) <- runTex (bopts^.backendOpts.surface.command)
+                                            (bopts^.backendOpts.surface.arguments)
+                                            [currentDir, targetDir]
+                                            source
+
+                case mPDF of
+                    Nothing  -> putStrLn "Error, no PDF found:"
+                            >> BS.putStrLn (prettyPrintLog texLog)
+                    Just pdf -> do BSL.writeFile cached pdf
+                                   copyFile cached outFile
+
+        -- tex output
+            _ -> do BSL.writeFile cached (BSB.toLazyByteString pgf)
+                    copyFile cached outFile
  where
   mkFile base ext = dir FP.</> base FP.<.> ext
 
