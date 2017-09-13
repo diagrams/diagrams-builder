@@ -3,6 +3,7 @@
 - Allow `haskell-src-exts-1.19` and `haskell-src-exts-simple-1.19`
 
 - Allow `hint-0.7` in Hackage revision 2.
+- Allow `base-4.10` in Hackage revision 3.
 
 ## [v0.8](https://github.com/diagrams/diagrams-builder/tree/v0.8) (2016-10-26)
 
