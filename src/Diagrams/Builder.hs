@@ -48,6 +48,7 @@ import           Control.Arrow                       (second)
 import           Control.Monad                       (guard, mplus, mzero)
 import           Control.Monad.Catch                 (MonadMask, catchAll)
 import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
+import           Data.Char                           (isAlphaNum)
 import           Data.Data
 import           Data.Hashable                       (Hashable (..))
 import           Data.List                           (foldl', nub)
@@ -97,7 +98,7 @@ setDiagramImports
 
 setDiagramImports m imps = do
     loadModules [m]
-    setTopLevelModules [takeBaseName m]
+    setTopLevelModules [takeWhile isAlphaNum $ takeBaseName m]
     setImportsQ $
       map (, Nothing)
         [ "Prelude"
@@ -208,7 +209,7 @@ buildDiagram bopts = do
         Just upd -> do
           tmpDir   <- getTemporaryDirectory
           (tmp, h) <- openTempFile tmpDir "Diagram.hs"
-          let m' = replaceModuleName (takeBaseName tmp) m
+          let m' = replaceModuleName (takeWhile isAlphaNum $ takeBaseName tmp) m
           hPutStr h (prettyPrint m')
           hClose h
 
