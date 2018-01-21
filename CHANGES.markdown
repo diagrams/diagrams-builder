@@ -1,3 +1,8 @@
+## [v0.8.0.2](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.2) (2018-01-21)
+
+- Allow `haskell-src-exts-1.20` and `haskell-src-exts-simple-1.20`
+- Bug fix for GHC 8.2: temp module generation now uses a valid name ([#32](https://github.com/diagrams/diagrams-builder/issues/32))
+
 ## [v0.8.0.1](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.1) (2016-11-28)
 
 - Allow `haskell-src-exts-1.19` and `haskell-src-exts-simple-1.19`
