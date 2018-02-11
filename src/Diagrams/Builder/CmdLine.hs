@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE RecordWildCards #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -16,30 +17,58 @@ module Diagrams.Builder.CmdLine where
     -- )
     -- where
 
--- import System.Console.CmdArgs
+import Options.Applicative
+import Diagrams.Prelude
+import Diagrams.Backend
+import Diagrams.Builder
+import Diagrams.Builder.Opts
 
--- -- | Record of command-line options.
--- data Build = Build { width   :: Maybe Double
-    --                , height  :: Maybe Double
-    --                , srcFile :: String
-    --                , expr    :: String
-    --                , outFile :: String
-    --                , dir     :: String
-    --                }
-  -- deriving (Typeable, Data)
+-- | Record of command-line options.
+data Build = Build
+  { buildSize :: SizeSpec V2 Int
+  , cacheDir  :: FilePath
+  , srcFile   :: FilePath
+  , outFile   :: FilePath
+  , bExpr :: String
+  }
 
--- -- | Default command-line options record.
--- defaultBuildOpts :: Build
--- defaultBuildOpts =
-  -- Build
-  -- { width    = def &= typ "INT"
-  -- , height   = def &= typ "INT"
-  -- , srcFile  = "" &= argPos 0 &= typFile
-  -- , expr     = "dia"
-    --            &= typ "EXPRESSION"
-    --            &= help "Expression to render (default: \"dia\")"
-  -- , outFile  = def &= typFile &= help "Output file"
-  -- , dir      = ".diagrams_cache"
-    --            &= typDir
-    --            &= help "Directory in which to store rendered diagrams by hash (default: \".diagrams_cache\")"
-  -- }
+buildParser :: Parser Build
+buildParser = Build <$> sizeParser <*> cacheParser <*> srcParser <*> outputParser <*> exprParser
+  where
+    cacheParser = strOption $ mconcat
+      [ long "cache", short 'c', metavar "FILEPATH"
+      , help "Folder to cache diagrams", value ".diagrams_cache" ]
+    srcParser = strArgument $ mconcat
+      [ metavar "FILEPATH", help "Source file" ]
+    exprParser = strOption $ mconcat
+      [ long "expr", short 'e', metavar "STRING"
+      , help "Expression to evaluate for the value of the diagram"
+      , value "diagram"]
+
+buildSnippet :: Build -> IO Snippet
+buildSnippet Build {..} = do
+  src <- readFile srcFile
+  return $ emptySnippet &~ do
+    snippets .= [src]
+    imports  .= ["Prelude", "Diagrams.Prelude", "Diagrams.Backend", "Geometry"]
+    pragmas  .= ["NoMonomorphismRestriction", "FlexibleContexts"]
+
+simple :: Build -> BackendInfo -> IO ()
+simple build info = do
+  snippet <- buildSnippet build
+  let buildOpts = DiaBuildOpts
+        { _cachePath = Just (cacheDir build)
+        , _buildInfo = info
+        , _buildTarget = outFile build
+        , _diaOutputSize = buildSize build
+        , _diaBuildExpr = bExpr build
+        }
+
+  r <- saveDiaBuilder snippet buildOpts
+  case r of
+    ParseError err    -> putStrLn "Parse error:" >> putStrLn err
+    InterpError ierr  -> putStrLn "Compile error:" >>
+                         putStrLn (ppInterpError ierr)
+    Skipped hash      -> return () -- copyFile (mkFile (hashToHexStr hash)) outFile
+    OK hash svg       -> return ()
+

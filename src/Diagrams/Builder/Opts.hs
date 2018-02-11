@@ -17,26 +17,24 @@
 --
 -----------------------------------------------------------------------------
 module Diagrams.Builder.Opts
-  ( -- * Options
-    BuildOpts(..)
-  , mkBuildOpts
-  , backendOpts
-  , snippets
-  , pragmas
-  , imports
-  , qimports
-  , hashCache
-  , diaExpr
-  , postProcess
+  -- ( -- * Options
+  --   Snippet(..)
+  -- , emptySnippet
+  -- -- , mkBuildOpts
+  -- -- , backendOpts
+  -- , snippets
+  -- , pragmas
+  -- , imports
+  -- , qimports
+  -- -- , hashCache
+  -- -- , diaExpr
+  -- -- , postProcess
 
-    )
+  --   )
     where
 
-import           Control.Lens     (Lens', generateSignatures, lensRules,
-                                   makeLensesWith, (&), (.~))
-
-import           Diagrams.Prelude (Diagram, V, Any)
-import           Diagrams.Backend (Options)
+import           Diagrams.Prelude
+import           Diagrams.Backend
 
 
 -- | Options to control the behavior of @buildDiagram@.  Create one
@@ -48,22 +46,14 @@ import           Diagrams.Backend (Options)
 --     & imports .~ [\"Foo.Bar\", \"Baz.Quux\"]
 --     & diaExpr .~ \"square 6 # fc green\"
 -- @
-data BuildOpts b = BuildOpts
-  { backendToken :: b
-    -- ^ Backend token
-  -- , vectorToken  :: v n
-  --   -- ^ Dummy vector argument to fix the vector space type
-  , _backendOpts :: Options b
-  , _snippets    :: [String]
+data Snippet = Snippet
+  { _snippets    :: [String]
   , _pragmas     :: [String]
   , _imports     :: [String]
   , _qimports    :: [(String, String)]
-  , _hashCache   :: Maybe FilePath
-  , _diaExpr     :: String
-  , _postProcess :: Diagram (V b) -> Diagram (V b)
-  }
+  } deriving Show
 
-makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
+makeLensesWith (lensRules & generateSignatures .~ False) ''Snippet
 
 -- | Create a @BuildOpts@ record with default options:
 --
@@ -78,30 +68,32 @@ makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
 --   * the diagram expression @circle 1@
 --
 --   * no postprocessing
-mkBuildOpts :: b -> Options b -> BuildOpts b
-mkBuildOpts b opts
-  = BuildOpts b opts [] [] [] [] Nothing "circle 1" id
+emptySnippet :: Snippet
+emptySnippet = Snippet
+  { _snippets    = []
+  , _pragmas     = []
+  , _imports     = []
+  , _qimports    = []
+  }
 
--- | Backend-specific options to use.
-backendOpts :: Lens' (BuildOpts b) (Options b)
 
 -- | Source code snippets.  Each should be a syntactically valid
 --   Haskell module.  They will be combined intelligently, /i.e./
 --   not just pasted together textually but combining pragmas,
 --   imports, /etc./ separately.
-snippets :: Lens' (BuildOpts b) [String]
+snippets :: Lens' Snippet [String]
 
 -- | Extra @LANGUAGE@ pragmas to use (@NoMonomorphismRestriction@
 --   is automatically enabled.)
-pragmas :: Lens' (BuildOpts b) [String]
+pragmas :: Lens' Snippet [String]
 
 -- | Additional module imports (note that "Diagrams.Prelude" is
 --   automatically imported).
-imports :: Lens' (BuildOpts b) [String]
+imports :: Lens' Snippet [String]
 
 -- | Additional qualified module imports (module name, qualified
 --   name).
-qimports :: Lens' (BuildOpts b) [(String, String)]
+qimports :: Lens' Snippet [(String, String)]
 
 -- | A function to decide whether a particular diagram needs to be
 --   regenerated.  It will be passed a hash of the final assembled
@@ -126,13 +118,13 @@ qimports :: Lens' (BuildOpts b) [(String, String)]
 -- decideRegen :: Lens' (BuildOpts b) (Hash -> IO (Maybe (Options b -> Options b)))
 
 -- | Only rebuild the diagram if the hash has changed.
-hashCache :: Lens' (BuildOpts b) (Maybe FilePath)
+-- hashCache :: Lens' BuildOpts (Maybe FilePath)
 
 -- | The diagram expression to interpret.  All the given import sand
 --   snippets will be in scope, with the given LANGUAGE pragmas
 --   enabled.  The expression may have either of the types @Diagram b@
 --   or @IO (Diagram b)@.
-diaExpr :: Lens' (BuildOpts b) String
+-- buildExpr :: Lens' BuildOpts String
 
 -- | A function to apply to the interpreted diagram prior to
 --   rendering.  For example, you might wish to apply @pad 1.1
@@ -140,5 +132,23 @@ diaExpr :: Lens' (BuildOpts b) String
 --   string expression to be interpreted, since it gives better
 --   typechecking, and works no matter whether the expression
 --   represents a diagram or an IO action.
-postProcess :: Lens' (BuildOpts b) (Diagram (V b) -> Diagram (V b))
+-- postProcess :: Lens' (BuildOpts b) (Diagram (V b) -> Diagram (V b))
+
+data BuildOpts a = BuildOpts
+  { _buildSave :: FilePath -> a -> IO ()
+  , _hashCache :: Maybe (Int, FilePath)
+  , _buildExpr :: String
+  }
+
+makeLensesWith (lensRules & generateSignatures .~ False) ''BuildOpts
+
+data DiaBuildOpts = DiaBuildOpts
+  { _cachePath :: Maybe FilePath
+  , _buildInfo :: BackendInfo
+  , _buildTarget :: FilePath
+  , _diaBuildExpr :: String
+  , _diaOutputSize :: SizeSpec V2 Int
+  }
+
+makeLensesWith (lensRules & generateSignatures .~ False) ''DiaBuildOpts
 
