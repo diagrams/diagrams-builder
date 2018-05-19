@@ -52,7 +52,7 @@ library
                        base-orphans >= 0.3 && < 0.7,
                        mtl >= 2.1 && < 2.3,
                        diagrams-lib >= 1.4 && < 1.5,
-                       hint >= 0.4 && < 0.8,
+                       hint >= 0.4 && < 0.9,
                        directory,
                        filepath,
                        transformers >= 0.3 && < 0.6,
