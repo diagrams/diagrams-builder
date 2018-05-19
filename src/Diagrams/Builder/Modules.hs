@@ -25,7 +25,6 @@ module Diagrams.Builder.Modules where
 import           Control.Arrow                (second)
 import           Control.Lens                 ((^.))
 import           Data.Function                (on)
-import           Data.Functor                 ((<$>))
 import           Data.List                    (foldl', groupBy, isPrefixOf, nub,
                                                sortBy)
 import           Data.Maybe                   (isJust)
