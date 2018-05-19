@@ -1,43 +1,29 @@
-sudo: false
-
-before_install:
-  # stack
-  - mkdir -p ~/.local/bin
-  - export PATH=/opt/ghc/7.10.3/bin:$PATH
-  - export PATH=~/.local/bin:$PATH
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
-  - git clone http://github.com/diagrams/diagrams-travis travis
-  - ./travis/scripts/git_deps.sh
-  - stack install alex
-  - stack install gtk2hs-buildtools
-
-addons:
-  apt:
-    sources:
-    - hvr-ghc
-    packages:
-    - ghc-7.10.3
-    - libgmp-dev
-    - libgtk-3-dev
-    - libcairo2-dev
-    - libpango1.0-dev
+language: haskell
 
 env:
+  matrix:
+    - GHCVER=7.8.4 CABALVER=1.18
+    - GHCVER=7.10.3 CABALVER=1.22
+    - GHCVER=8.0.2 CABALVER=1.24
+    - GHCVER=8.2.2 CABALVER=2.0
+    - GHCVER=8.4.2 CABALVER=2.2
+    - GHCVER=head CABALVER=head
   global:
     - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific diagrams-pgf active dual-tree monoid-extras statestack diagrams-solve"
-    - STACK_YAML='travis-stack.yaml'
 
-install:
-  - ./travis_long stack --no-terminal --skip-ghc-check setup
-  - ./travis_long stack --no-terminal --skip-ghc-check test --only-snapshot
+matrix:
+  allow_failures:
+    - env: GHCVER=head CABALVER=head
 
-script:
-  - stack --no-terminal --skip-ghc-check test
+before_install:
+  - git clone http://github.com/diagrams/diagrams-travis travis
+  - source travis/scripts/set_env.sh
+  - ./travis/scripts/before_install.sh
 
-# Caching so the next build will be fast too.
-cache:
-  directories:
-  - $HOME/.stack
+install: ./travis/scripts/install.sh
+
+script: ./travis/scripts/script.sh
+
 
 notifications:
   email: false
