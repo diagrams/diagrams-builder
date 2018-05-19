@@ -90,12 +90,13 @@ replaceModuleName m (Module Nothing p i d)
   = Module (Just (ModuleHead (ModuleName m) Nothing Nothing)) p i d
 replaceModuleName m (Module (Just (ModuleHead _ w e)) p i d)
   = Module (Just (ModuleHead (ModuleName m) w e)) p i d
+replaceModuleName _ m = m
 
 -- | Delete module exports.
 deleteExports :: Module -> Module
-deleteExports m@(Module Nothing _ _ _) = m
 deleteExports (Module (Just (ModuleHead n w _)) p i d)
   = Module (Just (ModuleHead n w Nothing)) p i d
+deleteExports m = m
 
 -- | Add some @LANGUAGE@ pragmas to a module if necessary.
 addPragmas :: [String] -> Module -> Module
@@ -103,6 +104,7 @@ addPragmas langs (Module h p i d) = Module h (f p) i d
   where f [] = [LanguagePragma (map Ident langs)]
         f (LanguagePragma ps : rest) = LanguagePragma (ps ++ map Ident langs) : rest
         f (x : rest) = x : f rest
+addPragmas _ m = m
 
 -- | Add some imports to a module if necessary.
 addImports :: [(String, Maybe String)] -> Module -> Module
@@ -115,6 +117,7 @@ addImports imps (Module h p i d) = Module h p (foldr addImport i imps) d
              ((==imp) . getModuleName . importModule) imp'
           && (isJust mq == importQualified imp')
           && ((ModuleName <$> mq) == importAs imp')
+addImports _ m = m
 
 -- | Combine two modules into one, with a left bias in the case of
 --   things that can't be sensibly combined (/e.g./ the module name).
@@ -142,8 +145,12 @@ combineModules (Module h ps1 i1 d1)
     otherPragmas = filter (not . isLangPragma)
     isLangPragma (LanguagePragma {}) = True
     isLangPragma _                   = False
+combineModules m1 m2 = error $ "Diagrams.Builder.Modules: weird modules " ++ show m1 ++ " and " ++ show m2
 
 -- | Convert a @ModuleName@ to a @String@.
 getModuleName :: ModuleName -> String
 getModuleName (ModuleName n) = n
-
+getModuleName m = error $ "Diagrams.Builder.Modules.getModuleName: got a ModuleName that isn't! " ++ show m
+  -- GHC warns about incomplete matches because ModuleName is now a
+  -- pattern synonym, and the haskell-src-exts-simple package doesn't
+  -- use COMPLETE pragmas
