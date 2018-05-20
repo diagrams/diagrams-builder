@@ -216,6 +216,7 @@ buildDiagram bopts = do
           compilation <- interpretDiagram (bopts' & backendOpts %~ upd) tmp
           removeFile tmp
           return $ either InterpErr (OK diaHash) compilation
+    Right m -> error $ "Diagrams.Builder.buildDiagram: weird module " ++ show m
 
 -- | Take a list of imports, and return a hash of the contents of
 --   those imports which are local.  Note, this only finds imports
