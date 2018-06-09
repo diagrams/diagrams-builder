@@ -1,3 +1,10 @@
+## [v0.8.0.3](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.3) (2018-06-09)
+
+- Bump upper bounds: allow `exceptions-0.10`, `lens-4.16`, `hint-0.8`,
+  `base-4.11`, `base-orphans-0.7`
+- Test with GHC 8.4
+- Drop GHC 7.8 support
+
 ## [v0.8.0.2](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.2) (2018-01-21)
 
 - Allow `haskell-src-exts-1.20` and `haskell-src-exts-simple-1.20`
