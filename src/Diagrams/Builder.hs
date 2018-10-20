@@ -1,15 +1,16 @@
 {-# LANGUAGE CPP                   #-}
-{-# LANGUAGE MonoLocalBinds        #-}
-{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE DeriveFoldable        #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE DeriveTraversable     #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TupleSections         #-}
+{-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -fno-warn-orphans  #-}
 
@@ -59,27 +60,29 @@ module Diagrams.Builder where
 
   -- ) where
 
-import           Control.Lens                 (Traversal', cons, (^.), (^?),
-                                               _Just)
+import           Control.Applicative
+import           Control.Lens                        (Traversal', cons, (^.),
+                                                      (^?), _Just)
 import           Control.Monad
 import           Control.Monad.Catch
-import           Control.Monad.Trans.Maybe    (MaybeT, runMaybeT)
-import           Data.Foldable                (Foldable)
-import           Data.Hashable                (Hashable (..))
-import           Data.List                    (find, foldl', nub)
-import           Data.List.Split              (splitOn)
+import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
+import           Data.Foldable                       (Foldable)
+import           Data.Hashable                       (Hashable (..))
+import           Data.List                           (find, foldl', nub)
+import           Data.List.Split                     (splitOn)
 import           Data.Maybe
-import           Data.Traversable             as T (Traversable, mapM)
+import           Data.Traversable                    as T (Traversable, mapM)
 import           Data.Typeable
-import           Data.Word                    (Word)
-import           Numeric                      (showHex)
-import           System.Directory             (copyFile, doesFileExist,
-                                               getDirectoryContents)
-import           System.FilePath              (takeBaseName, takeExtension,
-                                               (<.>), (</>))
-import           System.IO                    (withFile, hClose, hPutStr, IOMode(WriteMode))
+import           Data.Word                           (Word)
+import           Numeric                             (showHex)
+import           System.Directory                    (copyFile, doesFileExist,
+                                                      getDirectoryContents)
+import           System.FilePath                     (takeBaseName,
+                                                      takeExtension, (<.>),
+                                                      (</>))
+import           System.IO                           (IOMode (WriteMode),
+                                                      hClose, hPutStr, withFile)
 import           System.IO.Temp
-import Control.Applicative
 
 import           Diagrams.Backend
 
@@ -87,8 +90,8 @@ import           Diagrams.Builder.Modules
 import           Diagrams.Builder.Opts
 import           Diagrams.Prelude
 
-import           Language.Haskell.Exts.Simple  --       (ImportDecl, Module (..), importModule, prettyPrint)
-import           Language.Haskell.Interpreter hiding (ModuleName)
+import           Language.Haskell.Exts.Simple
+import           Language.Haskell.Interpreter        hiding (ModuleName)
 import           Language.Haskell.Interpreter.Unsafe
 
 -- Type synonyms for saner type signatures.
