@@ -8,6 +8,7 @@
 -- -> Module (Just (ModuleHead mn w exp)) ps imp decl
 
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -49,7 +50,7 @@ import           Diagrams.Builder.Opts
 --   failed.
 createModule
   :: Maybe String -- ^ Module name to use
-  -> Snippet
+  -> Snippets
   -> Either String Module
 createModule nm opts = do
   ms <- mapM doModuleParse (opts ^. snippets)
@@ -148,4 +149,3 @@ combineModules (Module h ps1 i1 d1)
 -- | Convert a @ModuleName@ to a @String@.
 getModuleName :: ModuleName -> String
 getModuleName (ModuleName n) = n
-

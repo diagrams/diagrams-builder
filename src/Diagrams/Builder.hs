@@ -7,12 +7,14 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE ViewPatterns          #-}
-{-# OPTIONS_GHC -fno-warn-orphans  #-}
+
+{-# OPTIONS_GHC -fno-warn-orphans        #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -25,61 +27,32 @@
 -- preprocessors to interpret diagrams code embedded in documents.
 --
 -----------------------------------------------------------------------------
-module Diagrams.Builder where
-  -- ( -- * Building diagrams
+module Diagrams.Builder
+  ( -- * Building diagrams
+    diaSnippet
+  , saveDiagramExpression
+  , snippetInterpret
+  , runInterpret
+  , runSandboxInterpreter
+  , cacheRun
+  , cacheRunI
+  , DiagramBuilder (..)
+  , ppInterpError
+  ) where
 
-  --   -- ** Options
-  --   BuildOpts (..)
+import           System.Directory
 
-  --   -- *** Lenses
-  -- , mkBuildOpts
-  -- , backendOpts
-  -- , snippets
-  -- , pragmas
-  -- , imports
-  -- , diaExpr
-  -- , postProcess
-  -- , hashCache
-
-  --   -- ** Building
-  -- , BuildResult (..)
-  -- , buildDia
-  -- , buildDiaResult
-  -- , buildDiaToFile
-  -- , buildDiaToHash
-  -- , ppInterpError
-  -- , showHash
-
-  --   -- * Interpreting diagrams
-  --   -- $interp
-  -- , setDiaImports
-  -- , interpretDia
-
-  --   -- * Type aliases
-  -- , Backend', BackendBuild', Hash
-
-  -- ) where
-
-import           Control.Applicative
-import           Control.Lens                        (Traversal', cons, (^.),
-                                                      (^?), _Just)
+import           Control.Lens                        (cons, (^.))
 import           Control.Monad
 import           Control.Monad.Catch
-import           Control.Monad.Trans.Maybe           (MaybeT, runMaybeT)
-import           Data.Foldable                       (Foldable)
 import           Data.Hashable                       (Hashable (..))
-import           Data.List                           (find, foldl', nub)
-import           Data.List.Split                     (splitOn)
-import           Data.Maybe
-import           Data.Traversable                    as T (Traversable, mapM)
+import           Data.List                           (nub)
 import           Data.Typeable
 import           Data.Word                           (Word)
 import           Numeric                             (showHex)
-import           System.Directory                    (copyFile, doesFileExist,
-                                                      getDirectoryContents)
+import           System.Directory                    (copyFile, doesFileExist)
 import           System.FilePath                     (takeBaseName,
-                                                      takeExtension, (<.>),
-                                                      (</>))
+                                                      takeExtension, (</>))
 import           System.IO                           (IOMode (WriteMode),
                                                       hClose, hPutStr, withFile)
 import           System.IO.Temp
@@ -88,58 +61,158 @@ import           Diagrams.Backend
 
 import           Diagrams.Builder.Modules
 import           Diagrams.Builder.Opts
-import           Diagrams.Prelude
+import           Diagrams.Prelude                    hiding (dir)
 
 import           Language.Haskell.Exts.Simple
 import           Language.Haskell.Interpreter        hiding (ModuleName)
 import           Language.Haskell.Interpreter.Unsafe
 
--- Type synonyms for saner type signatures.
+-- There are multiple ways to use the diagrams-builds package. In
+-- principle the majority of this package is not limited to
+-- diagrams, but it has been written with diagrams in mind.
+--
+-- There are multiple levels at which you can use the diagrams-builder.
+-- The most common way is 'builderWithCache' that takes an expression
 
-type BackendBuild' b =
-  (BackendBuild b, Hashable (Options b), Typeable b,
-   Typeable (V b), HasLinearMap (V b), Metric (V b))
-
-type Backend' b = (Typeable b, Typeable (V b), HasLinearMap (V b), Metric (V b), Backend b)
-
-diaBuildOpts :: BackendBuild' b => Options b -> BuildOpts (Diagram (V b))
-diaBuildOpts opts = BuildOpts
-  { -- _postProcess = id
-    _hashCache   = Nothing
-  , _buildSave = flip saveDiagram' opts
-  -- , _buildHash   = hash opts
-  , _buildExpr   = "diagram"
+-- | An encapsulation of code that should interpret to the value @a@.
+data Interpret a = Interpret
+  { interpretModule  :: Module
+  , interpretImports :: [(String, Maybe String)]
+  , interpExpr       :: String
   }
 
-saveDiaBuilder :: Snippet -> DiaBuildOpts -> IO (BuildResult ())
-saveDiaBuilder snip diaOpts = do
-  let snip' = prepareSnippet $ snip & imports <>~ diaOpts^.buildInfo.to backendModules
-  let expr = saveExpr (diaOpts^.diaBuildExpr)
-                      (diaOpts^.buildInfo)
-                      (diaOpts^.diaOutputSize)
-                      (diaOpts^.buildTarget)
-      diaHash = 12314 -- XXX
-  case createModule Nothing snip' of
-    Left err -> return (ParseError err)
-    Right m  -> do
-      -- diaHash <- hashModule bopts m
-      let diaHash = 123453 -- XXX
+instance Typeable a => Hashable (Interpret a) where
+  hashWithSalt s i@Interpret {..} =
+    s `hashWithSalt` prettyPrint interpretModule
+      `hashWithSalt` interpretImports
+      `hashWithSalt` interpExpr
+      `hashWithSalt` typeRep i
 
-      let imps = map (,Nothing) (snip' ^. imports) ++
-                 map (_2 %~ Just) (snip' ^. qimports)
-          -- expr = bopts ^. buildExpr
-          buildDia = do
-            d <- runSandboxInterpreter $ interpretFromModule m imps expr
-            return $ either InterpError (OK diaHash) d
+-- | Information about how save a diagram.
+data DiagramBuilder = DiagramBuilder
+  { _diaInfo    :: BackendInfo
+  , _diaExpr    :: String
+  , _diaOutSize :: SizeSpec V2 Int
+  }
 
-      case diaOpts ^. cachePath of
-        Nothing   -> buildDia
-        Just path -> do
-          alreadyDone <- isJust <$> checkHash path diaHash
-          if alreadyDone
-            then return $ Skipped diaHash
-            else buildDia
+-- | A diagram builder snippet that saves to a file.
+diaSnippet
+  :: Snippets
+  -- ^ snippets to import
+  -> DiagramBuilder
+  -- ^ expression to run
+  -> Either String (Interpret (FilePath -> IO ()))
+  -- ^ either parse error or interpreter
+diaSnippet snips builder = snippetInterpret snips' expr
+  where
+    expr = saveDiagramExpression (_diaExpr builder) (_diaInfo builder) (_diaOutSize builder)
+    snips' = snips & imports <>~ backendModules (_diaInfo builder)
 
+-- | The literal expression that can be interpreted to save a diagram.
+saveDiagramExpression :: String -> BackendInfo -> SizeSpec V2 Int -> String
+saveDiagramExpression expr info sz = "(\\saveDiagramExpressionPath -> " ++ unwords
+  [ "saveDiagram"
+  , backendTokenName info
+  , "saveDiagramExpressionPath"
+  , showSizeSpec sz
+  , parens expr
+  ] ++ ")"
+
+-- | Make an interpret out of a snippet and the expression to evaluate.
+snippetInterpret
+  :: Snippets
+  -- ^ snippets to import
+  -> String
+  -- ^ expression to run
+  -> Either String (Interpret a)
+snippetInterpret snip expr = do
+  let snip' = prepareSnippet snip
+      imps = map (,Nothing) (snip' ^. imports) ++
+             map (_2 %~ Just) (snip' ^. qimports)
+  modu <- createModule Nothing snip'
+  pure $ Interpret
+    { interpretModule  = modu
+    , interpretImports = imps
+    , interpExpr    = expr
+    }
+
+-- | Run an interpret.
+runInterpret
+  :: (MonadInterpreter m, Typeable a)
+  => Interpret a
+  -> m a
+runInterpret Interpret {..} =
+  tempModule interpretModule $ \path -> do
+    loadModules [path]
+    setTopLevelModules [takeBaseName path]
+    setImportsQ interpretImports
+    interpretExpr interpExpr
+
+-- | Call a function that writes to a file via a cache. If the hash
+--   already existed do not call the function and instead copy the file
+--   from the cache.
+cache
+  :: MonadIO m
+  => FilePath
+  -- ^ cache path
+  -> Hash
+  -- ^ the hash assosiated with a thing
+  -> (FilePath -> m ())
+  -- ^ function to write to a file
+  -> FilePath
+  -- ^ path to write file to
+  -> m Bool
+  -- ^ whether the hash already existed
+cache cacheDir h f outputPath = do
+  liftIO $ createDirectoryIfMissing True cacheDir
+  let hashPath = cacheDir </> showHash h <> takeExtension outputPath
+  hashExists <- liftIO $ doesFileExist hashPath
+  unless hashExists $ f hashPath
+  liftIO $ copyFile hashPath outputPath
+  pure hashExists
+
+-- | Run an file saving interpret that uses a cache to copy files that
+--   have already been computed (using the hash of the 'Interpret').
+--   Prints an error if there was an interpretor error.
+cacheRun
+  :: FilePath
+  -- ^ cache path
+  -> Interpret (FilePath -> IO ())
+  -- ^ result in a function the writes to a file
+  -> FilePath
+  -- ^ target destination
+  -> IO Bool
+  -- ^ whether the hash already existed
+cacheRun cacheDir i outputPath =
+  cache cacheDir (hash i) func outputPath
+  where
+    func path = do
+      a <- runSandboxInterpreter $ do
+        f <- runInterpret i
+        liftIO $ f path
+      case a of
+        Left ierr -> putStrLn $ ppInterpError ierr
+        Right x   -> pure x
+
+-- | Similar to 'cacheRun' but runs in a 'MonadInterpreter'.
+cacheRunI
+  :: MonadInterpreter m
+  => FilePath
+  -- ^ cache path
+  -> Interpret (FilePath -> IO ())
+  -- ^ result in a function the writes to a file
+  -> FilePath
+  -- ^ target destination
+  -> m Bool
+  -- ^ whether the hash already existed
+cacheRunI cacheDir i outputPath =
+  cache cacheDir (hash i) func outputPath
+  where
+    func path = do
+      f <- runInterpret i
+      liftIO $ f path
+
+-- | Show a size spec in a way that can be parsed by ghc.
 showSizeSpec :: SizeSpec V2 Int -> String
 showSizeSpec sz = case getSpec sz of
   -- note that getSpec only return positive values so we don't need to
@@ -148,17 +221,6 @@ showSizeSpec sz = case getSpec sz of
   V2 (Just x) Nothing  -> "(mkWidth " ++ show x ++ ")"
   V2 Nothing (Just y)  -> "(mkHeight " ++ show y ++ ")"
   V2 Nothing Nothing   -> "absolute"
-
-saveExpr :: String -> BackendInfo -> SizeSpec V2 Int -> FilePath -> String
-saveExpr expr info sz path = unwords
-  [ "saveDiagram"
-  , backendTokenName info
-  , show path
-  , showSizeSpec sz
-  , parens expr
-  ]
-
-
 
 -- | Synonym for more perspicuous types.
 --
@@ -172,7 +234,7 @@ saveExpr expr info sz path = unwords
 type Hash = Int
 
 ------------------------------------------------------------
--- Interpreting diagrams
+-- Interpreting
 ------------------------------------------------------------
 
 -- | Interpret a @Diagram@ or @IO Diagram@ at the name of the function.
@@ -187,7 +249,7 @@ interpretExpr expr =
   const (interpret expr (as :: IO a) >>= liftIO)
 
 -- | Write a module to a temporary file and delete it when done. The
---   module name is replaced by the temporary file's name (\"Diagram\").
+--   module name is replaced by the temporary file's name (\"Build\").
 tempModule :: (MonadIO m, MonadMask m) => Module -> (FilePath -> m a) -> m a
 tempModule m f =
   withSystemTempDirectory "builder" $ \tempDir -> do
@@ -196,21 +258,6 @@ tempModule m f =
       let m' = replaceModuleName "Build" m
       liftIO $ hPutStr h (prettyPrint m') >> hClose h
     f tempFile
-
--- | Same as 'interpretDiaWithOpts' but save 'Module' to a temporary file
---   and import it.
-interpretFromModule
-  :: (MonadInterpreter m, Typeable a)
-  => Module
-  -> [(String, Maybe String)]
-  -> String
-  -> m a
-interpretFromModule m imps expr =
-  tempModule m $ \path -> do
-    loadModules [path]
-    setTopLevelModules [takeBaseName path]
-    setImportsQ imps
-    interpretExpr expr
 
 -- | Run an interpretor using sandbox from 'findSandbox'.
 runSandboxInterpreter
@@ -223,140 +270,6 @@ runSandboxInterpreter i = do
     Just sandbox -> let args = ["-package-db", sandbox]
                     in  unsafeRunInterpreterWithArgs args i
     Nothing      -> runInterpreter i
-
-------------------------------------------------------------------------
--- Build a diagram using a temporary file
-------------------------------------------------------------------------
-
--- | Potential results of a dynamic diagram building operation.
-data BuildResult r
-  = ParseError String            -- ^ Parsing of the code failed.
-  | InterpError InterpreterError -- ^ Interpreting the code
-                                 --   failed. See 'ppInterpError'.
-  | Skipped Hash                 -- ^ This diagram did not need to be
-                                 --   regenerated; includes the hash.
-  | OK Hash r                    -- ^ A successful build
-  deriving (Show, Functor, Foldable, Traversable)
-
--- | Traversal over the 'Hash' of a 'BuildResult' if no error occurred.
-resultHash :: Traversal' (BuildResult r) Hash
-resultHash f (Skipped h) = Skipped <$> f h
-resultHash f (OK h r)    = OK <$> f h <*> pure r
-resultHash _ err         = pure err
-
--- | Build a diagram. If the build hash is found, skip interpreting.
-buildResult
-  :: Typeable a
-  => Snippet
-  -> BuildOpts a
-  -> IO (BuildResult a)
-buildResult (prepareSnippet -> snip) bopts =
-  case createModule Nothing snip of
-    Left err -> return (ParseError err)
-    Right m  -> do
-      diaHash <- hashModule bopts m
-
-      let imps = map (,Nothing) (snip ^. imports) ++
-                 map (_2 %~ Just) (snip ^. qimports)
-          expr = bopts ^. buildExpr
-          getDia fullHash = do
-            d <- runSandboxInterpreter $ interpretFromModule m imps expr
-            return $ either InterpError (OK fullHash) d
-
-      case bopts ^. hashCache of
-        Nothing             -> getDia diaHash
-        Just (optHash,path) -> do
-          let fullHash = optHash `hashWithSalt` diaHash
-          alreadyDone <- isJust <$> checkHash path fullHash
-          if alreadyDone
-            then return $ Skipped fullHash
-            else getDia fullHash
-
--- | Build a diagram and save it to the given 'FilePath'. The
---   'hashCache' is used if it is present.
-saveResult
-  :: Typeable a
-  => Snippet
-  -> BuildOpts a
-  -> FilePath
-  -> (FilePath -> a -> IO ())
-  -> IO (BuildResult a)
-saveResult snip bopts outFile save = do
-  let ext = takeExtension outFile
-  case bopts ^. hashCache of
-    Just (optHash,dir) -> do
-      r <- buildResult snip bopts -- saveToHash snip bopts save (takeExtension outFile)
-      case r ^? resultHash of
-        Nothing -> return r
-        Just h  -> do
-          -- save (dir </> showHash h <.> ext) r
-          copyFile (dir </> showHash h <.> ext) outFile
-                >> return r
-
-    Nothing -> do
-      r <- buildResult snip bopts
-      case r of
-        OK h a -> save outFile a
-               >> return r
-        _      -> return r
-
--- buildDiaResult
---   :: BackendBuild' b
---   => BuildOpts b
---   -> IO (BuildResult (Result b))
--- buildDiaResult opts = do
---   d <- buildDia opts
---   return $ diaResult opts <$> d
-
-------------------------------------------------------------------------
--- Hashing
-------------------------------------------------------------------------
-
--- | Make a hash from BuildOpts and the Module. The hash includes any
---   local imports the module has.
-hashModule :: BuildOpts a -> Module -> IO Hash
-hashModule bopts m@(Module _ _ srcImps _) = do
-  liHash <- hashLocalImports srcImps
-  return (0 `hashWithSalt` prettyPrint m
-            -- `hashWithSalt` (bopts ^. buildHash)
-            `hashWithSalt` liHash)
-
-------------------------
--- Hashing local imports
-------------------------
-
--- We hash local imports in case they've changed.
-
--- | Take a list of imports, and return a hash of the contents of
---   those imports which are local.  Note, this only finds imports
---   which exist relative to the current directory, which is not as
---   general as it probably should be --- we could be calling
---   'buildDia' on source code which lives anywhere.
-hashLocalImports :: [ImportDecl] -> IO Hash
-hashLocalImports
-  = fmap (foldl' hashWithSalt 0 . catMaybes)
-  . T.mapM (getLocalSource . foldr1 (</>) . splitOn "." . getModuleName . importModule)
-
--- | Given a relative path with no extension, like
---   @\"Foo\/Bar\/Baz\"@, check whether such a file exists with either
---   a @.hs@ or @.lhs@ extension; if so, return its /pretty-printed/
---   contents (removing all comments, canonicalizing formatting, /etc./).
-getLocalSource :: FilePath -> IO (Maybe String)
-getLocalSource f = runMaybeT $ do
-  contents <- getLocal f
-  case (doModuleParse . unLit) contents of
-    Left _  -> mzero
-    Right m -> return (prettyPrint m)
-
--- | Given a relative path with no extension, like
---   @\"Foo\/Bar\/Baz\"@, check whether such a file exists with either a
---   @.hs@ or @.lhs@ extension; if so, return its contents.
-getLocal :: FilePath -> MaybeT IO String
-getLocal m = tryExt "hs" <|> tryExt "lhs"
-  where
-    tryExt ext = do
-      let f = m <.> ext
-      liftIO (doesFileExist f) >>= guard >> liftIO (readFile f)
 
 ------------------------------------------------------------------------
 -- Utilities
@@ -374,16 +287,8 @@ ppInterpError (GhcException err) = "GhcException: " ++ err
 showHash :: Hash -> String
 showHash h = showHex (fromIntegral h :: Word) ""
 
--- | Check for an existing rendered diagram in the directory that
---   matches the hash.
-checkHash :: FilePath -> Hash -> IO (Maybe FilePath)
-checkHash dir diaHash = do
-  files <- getDirectoryContents dir
-  return $ find ((== showHash diaHash) . takeBaseName) files
-
-prepareSnippet :: Snippet -> Snippet
+prepareSnippet :: Snippets -> Snippets
 prepareSnippet o = o &~ do
   snippets %= map unLit
   pragmas  %= cons "NoMonomorphismRestriction"
   imports  %= cons "Diagrams.Prelude"
-
