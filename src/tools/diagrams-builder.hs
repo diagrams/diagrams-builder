@@ -54,8 +54,9 @@ simple build info = do
     Right i  -> do
       x <- cacheRun (cacheDir build) i (outFile build)
       case x of
-        True  -> putStrLn "copied from cache"
-        False -> putStrLn "made a new one"
+        Left ierr   -> putStrLn $ ppInterpError ierr
+        Right True  -> putStrLn "copied from cache"
+        Right False -> putStrLn "made a new one"
 
 main :: IO ()
 main = do

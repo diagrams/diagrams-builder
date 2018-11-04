@@ -181,9 +181,9 @@ cacheRun
   -- ^ result in a function the writes to a file
   -> FilePath
   -- ^ target destination
-  -> IO Bool
+  -> IO (Either InterpreterError Bool)
   -- ^ whether the hash already existed
-cacheRun cacheDir i outputPath =
+cacheRun cacheDir i outputPath = try $
   cache cacheDir (hash i) func outputPath
   where
     func path = do
@@ -191,7 +191,7 @@ cacheRun cacheDir i outputPath =
         f <- runInterpret i
         liftIO $ f path
       case a of
-        Left ierr -> putStrLn $ ppInterpError ierr
+        Left ierr -> throwM ierr -- putStrLn $ ppInterpError ierr
         Right x   -> pure x
 
 -- | Similar to 'cacheRun' but runs in a 'MonadInterpreter'.
@@ -203,9 +203,9 @@ cacheRunI
   -- ^ result in a function the writes to a file
   -> FilePath
   -- ^ target destination
-  -> m Bool
+  -> m (Either InterpreterError Bool)
   -- ^ whether the hash already existed
-cacheRunI cacheDir i outputPath =
+cacheRunI cacheDir i outputPath = try $
   cache cacheDir (hash i) func outputPath
   where
     func path = do
