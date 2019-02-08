@@ -1,3 +1,12 @@
+## [v0.8.0.4](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.4) (2019-02-08)
+
+- Bump upper bounds: allow
+    - `base-4.12`
+    - `lens-4.17`
+    - `hint-0.9`
+    - `JuicyPixels-3.3`
+- New options added to `diagrams-latex.sty`
+
 ## [v0.8.0.3](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.3) (2018-06-09)
 
 - Bump upper bounds: allow `exceptions-0.10`, `lens-4.16`, `hint-0.8`,
