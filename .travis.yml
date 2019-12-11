@@ -6,10 +6,12 @@ env:
     - GHCVER=8.0.2 CABALVER=1.24
     - GHCVER=8.2.2 CABALVER=2.0
     - GHCVER=8.4.2 CABALVER=2.2
+    - GHCVER=8.6.5 CABALVER=2.4
+    - GHCVER=8.8.1 CABALVER=3.0
     - GHCVER=head CABALVER=head
   global:
     - UBUNTU_PKGS="libgmp-dev libgtk2.0-dev libcairo2-dev libpango1.0-dev"
-    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific diagrams-pgf active dual-tree monoid-extras statestack diagrams-solve"
+    - HEAD_DEPS="diagrams-core diagrams-lib diagrams-cairo diagrams-svg diagrams-postscript diagrams-rasterific diagrams-pgf dual-tree monoid-extras statestack diagrams-solve"
     - EXTRA_DEPS_PRE="gtk2hs-buildtools"
 
 matrix:
