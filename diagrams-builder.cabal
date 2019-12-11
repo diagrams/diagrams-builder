@@ -48,7 +48,7 @@ library
                        Diagrams.Builder.Opts
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
-  build-depends:       base >=4.2 && < 4.13,
+  build-depends:       base >=4.2 && < 4.14,
                        base-orphans >= 0.3 && < 0.9,
                        mtl >= 2.1 && < 2.3,
                        diagrams-lib >= 1.4 && < 1.5,
@@ -57,11 +57,11 @@ library
                        filepath,
                        transformers >= 0.3 && < 0.6,
                        split >= 0.2 && < 0.3,
-                       haskell-src-exts >= 1.18 && < 1.21,
-                       haskell-src-exts-simple >= 1.18 && < 1.21,
+                       haskell-src-exts >= 1.18 && < 1.23,
+                       haskell-src-exts-simple >= 1.18 && < 1.23,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.18,
-                       hashable >= 1.1 && < 1.3,
+                       lens >= 4.0 && < 4.19,
+                       hashable >= 1.1 && < 1.4,
                        exceptions >= 0.3 && < 0.11
   hs-source-dirs:      src
   default-language:    Haskell2010
@@ -118,7 +118,7 @@ executable diagrams-builder-cairo
                        diagrams-lib >= 1.4 && < 1.5,
                        diagrams-cairo >= 1.4 && < 1.5,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.18
+                       lens >= 4.0 && < 4.19
 
 executable diagrams-builder-svg
   main-is:             diagrams-builder-svg.hs
@@ -159,7 +159,7 @@ executable diagrams-builder-ps
                        diagrams-lib >= 1.4 && < 1.5,
                        diagrams-postscript >= 1.4 && < 1.5,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.18
+                       lens >= 3.8 && < 4.19
 
 executable diagrams-builder-rasterific
   main-is:             diagrams-builder-rasterific.hs
@@ -179,7 +179,7 @@ executable diagrams-builder-rasterific
                        diagrams-lib >= 1.4 && < 1.5,
                        diagrams-rasterific >= 1.4 && < 1.5,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.18,
+                       lens >= 3.8 && < 4.19,
                        JuicyPixels >= 3.1.5 && < 3.4
 
 executable diagrams-builder-pgf
@@ -201,5 +201,5 @@ executable diagrams-builder-pgf
                        diagrams-pgf >= 1.4 && < 1.5,
                        bytestring >= 0.10.2 && < 0.11,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 3.8 && < 4.18,
+                       lens >= 3.8 && < 4.19,
                        texrunner
