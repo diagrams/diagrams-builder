@@ -1,3 +1,12 @@
+## [v0.8.0.5](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.5) (2020-01-21)
+
+- Bump upper bounds: allow
+    - `base-4.13` (GHC 8.8)
+    - `haskell-src-exts-1.22`
+    - `haskell-src-exts-simple-1.22`
+    - `lens-4.18`
+    - `hashable-1.3`
+
 ## [v0.8.0.4](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.4) (2019-02-08)
 
 - Bump upper bounds: allow
