@@ -48,7 +48,7 @@ library
                        Diagrams.Builder.Opts
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
-  build-depends:       base >= 4.10 && < 4.14,
+  build-depends:       base >= 4.10 && < 4.16,
                        base-orphans >= 0.3 && < 0.9,
                        mtl >= 2.1 && < 2.3,
                        diagrams-lib >= 1.4 && < 1.5,
@@ -57,10 +57,10 @@ library
                        filepath,
                        transformers >= 0.3 && < 0.6,
                        split >= 0.2 && < 0.3,
-                       haskell-src-exts >= 1.18 && < 1.23,
-                       haskell-src-exts-simple >= 1.18 && < 1.23,
+                       haskell-src-exts >= 1.18 && < 1.24,
+                       haskell-src-exts-simple >= 1.18 && < 1.24,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 4.19,
+                       lens >= 4.0 && < 5.1,
                        hashable >= 1.1 && < 1.4,
                        exceptions >= 0.3 && < 0.11
   hs-source-dirs:      src
