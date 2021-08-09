@@ -7,6 +7,11 @@
     - `lens-4.18`
     - `hashable-1.3`
 
+- r1 (2021-08-09):
+    - allow `base-4.15` (GHC 8.10 and 9.0)
+    - allow `haskell-src-exts-1.23` and `haskell-src-exts-simple-1.23`
+    - allow `lens-5.0`
+
 ## [v0.8.0.4](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.4) (2019-02-08)
 
 - Bump upper bounds: allow
