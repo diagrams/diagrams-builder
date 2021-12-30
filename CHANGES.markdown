@@ -11,6 +11,11 @@
     - allow `base-4.15` (GHC 8.10 and 9.0)
     - allow `haskell-src-exts-1.23` and `haskell-src-exts-simple-1.23`
     - allow `lens-5.0`
+- r2 (2021-08-19): update URL
+- r3 (2021-12-30):
+    - allow `base-4.16` (GHC 9.2)
+    - allow `lens-5.1`
+    - allow `hashable-1.4`
 
 ## [v0.8.0.4](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.4) (2019-02-08)
 
