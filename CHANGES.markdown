@@ -16,6 +16,8 @@
     - allow `base-4.16` (GHC 9.2)
     - allow `lens-5.1`
     - allow `hashable-1.4`
+- r4 (2021-12-31):
+    - allow `lens-5.1` and `bytestring-0.11` in executables
 
 ## [v0.8.0.4](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.4) (2019-02-08)
 
