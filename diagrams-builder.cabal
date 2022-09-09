@@ -37,7 +37,7 @@ maintainer:          diagrams-discuss@googlegroups.com
 category:            Graphics
 build-type:          Simple
 cabal-version:       >=1.10
-tested-with:         GHC ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.4 || ==9.0.1 || ==9.2.1
+tested-with:         GHC ==8.4.4 || ==8.6.5 || ==8.8.4 || ==8.10.7 || ==9.0.2 || ==9.2.4 || ==9.4.1
 bug-reports:         https://github.com/diagrams/diagrams-builder/issues
 Source-repository head
   type:     git
@@ -48,19 +48,19 @@ library
                        Diagrams.Builder.Opts
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
-  build-depends:       base >= 4.10 && < 4.17,
+  build-depends:       base >= 4.10 && < 4.18,
                        base-orphans >= 0.3 && < 0.9,
                        mtl >= 2.1 && < 2.3,
                        diagrams-lib >= 1.4 && < 1.5,
                        hint >= 0.4 && < 0.10,
                        directory,
                        filepath,
-                       transformers >= 0.3 && < 0.6,
+                       transformers >= 0.3 && < 0.7,
                        split >= 0.2 && < 0.3,
                        haskell-src-exts >= 1.18 && < 1.24,
                        haskell-src-exts-simple >= 1.18 && < 1.24,
                        cmdargs >= 0.6 && < 0.11,
-                       lens >= 4.0 && < 5.2,
+                       lens >= 4.0 && < 5.3,
                        hashable >= 1.1 && < 1.5,
                        exceptions >= 0.3 && < 0.11
   hs-source-dirs:      src
