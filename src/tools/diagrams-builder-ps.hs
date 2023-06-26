@@ -1,11 +1,14 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE RecordWildCards    #-}
+{-# LANGUAGE CPP                #-}
 
 module Main where
 
+import qualified Data.ByteString.Builder     as B
 import           System.Directory            (copyFile,
                                               createDirectoryIfMissing)
 import qualified System.FilePath             as FP
+import qualified System.IO                   as IO
 
 import           System.Console.CmdArgs
 
@@ -37,9 +40,20 @@ compileExample (Build{..}) = do
     InterpErr ierr  -> putStrLn ("Error while compiling " ++ srcFile) >>
                        putStrLn (ppInterpError ierr)
     Skipped hash    -> copyFile (mkFile (hashToHexStr hash)) outFile
-    OK hash act     -> do act >> copyFile (mkFile (hashToHexStr hash)) outFile
+    OK hash builder -> do
+      let cached = mkFile (hashToHexStr hash)
+      writeBuilder cached builder
+      copyFile cached outFile
  where
    mkFile base = dir FP.</> base FP.<.> "eps"
+
+writeBuilder :: FilePath -> B.Builder -> IO ()
+#if MIN_VERSION_bytestring(0,11,2)
+writeBuilder fp b = B.writeFile fp b
+#else
+writeBuilder fp b = IO.withBinaryFile fp IO.WriteMode (`B.hPutBuilder` b)
+#endif
+{-# INLINE writeBuilder #-}
 
 build :: Build
 build =
