@@ -1,3 +1,16 @@
+## [v0.8.0.6](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.6) (2023-07-10)
+
+- Bump upper bounds: allow
+    - `base-4.18`
+    - `base-orphans-0.9`
+    - `mtl-2.3`
+    - `transformers-0.6`
+    - `lens-5.2`
+    - `diagrams-postscript-1.5`
+    - `bytestring-0.11`
+- Test on GHC 9.4 and 9.6
+- Drop support for GHC < 8.10
+
 ## [v0.8.0.5](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.5) (2020-01-21)
 
 - Bump upper bounds: allow
