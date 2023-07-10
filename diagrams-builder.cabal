@@ -48,9 +48,9 @@ library
                        Diagrams.Builder.Opts
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
-  build-depends:       base >= 4.10 && < 4.18,
+  build-depends:       base >= 4.10 && < 4.19,
                        base-orphans >= 0.3 && < 0.10,
-                       mtl >= 2.1 && < 2.3,
+                       mtl >= 2.1 && < 2.4,
                        diagrams-lib >= 1.4 && < 1.5,
                        hint >= 0.4 && < 0.10,
                        directory,
