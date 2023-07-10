@@ -1,2 +1,4 @@
+apt: libcairo2-dev libpango1.0-dev
+
 raw-project
   flags: +cairo +svg +ps +rasterific +pgf
