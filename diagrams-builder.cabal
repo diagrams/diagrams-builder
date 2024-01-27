@@ -37,7 +37,7 @@ maintainer:          diagrams-discuss@googlegroups.com
 category:            Graphics
 build-type:          Simple
 cabal-version:       >=1.10
-tested-with:         GHC ==8.10.7 || ==9.0.2 || ==9.2.7 || ==9.4.5 || ==9.6.1
+tested-with:         GHC ==8.10.7 || ==9.0.2 || ==9.2.8 || ==9.4.8 || ==9.6.3 || ==9.8.1
 bug-reports:         https://github.com/diagrams/diagrams-builder/issues
 Source-repository head
   type:     git
@@ -48,7 +48,7 @@ library
                        Diagrams.Builder.Opts
                        Diagrams.Builder.Modules
                        Diagrams.Builder.CmdLine
-  build-depends:       base >= 4.10 && < 4.19,
+  build-depends:       base >= 4.10 && < 4.20,
                        base-orphans >= 0.3 && < 0.10,
                        mtl >= 2.1 && < 2.4,
                        diagrams-lib >= 1.4 && < 1.5,
