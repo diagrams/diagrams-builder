@@ -172,7 +172,7 @@ jobs:
           echo "package diagrams-builder" >> cabal.project
           echo "    ghc-options: -Werror=missing-methods" >> cabal.project
           cat >> cabal.project <<EOF
-          flags: +cairo +svg +ps +rasterific +pgf
+          flags: +svg +ps +rasterific +pgf
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(diagrams-builder)$/; }' >> cabal.project.local
           cat cabal.project
