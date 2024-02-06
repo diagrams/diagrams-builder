@@ -11,6 +11,12 @@
 - Test on GHC 9.4 and 9.6
 - Drop support for GHC < 8.10
 
+- r1 (2024-02-06):
+    - allow `bytestring-0.12` and `base-4.19`
+    - Test on GHC 9.8
+    - Note as of this release the `-fcairo` flag is not supported on
+      GHC 9.8.
+
 ## [v0.8.0.5](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.5) (2020-01-21)
 
 - Bump upper bounds: allow
