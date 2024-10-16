@@ -16,6 +16,9 @@
     - Test on GHC 9.8
     - Note as of this release the `-fcairo` flag is not supported on
       GHC 9.8.
+- r2 (2024-10-16):
+    - allow `filepath-1.5`, `lens-5.3`, and `hashable-1.5`
+    - Note it still does not support GHC 9.10 due to dependency issues.
 
 ## [v0.8.0.5](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.5) (2020-01-21)
 
