@@ -199,7 +199,7 @@ executable diagrams-builder-pgf
                        directory,
                        diagrams-builder,
                        diagrams-lib >= 1.4 && < 1.6,
-                       diagrams-pgf >= 1.4 && < 1.5,
+                       diagrams-pgf >= 1.4 && < 1.6,
                        bytestring >= 0.10.2 && < 0.13,
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.8 && < 5.4,
