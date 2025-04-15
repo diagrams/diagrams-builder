@@ -178,7 +178,7 @@ executable diagrams-builder-rasterific
                        directory,
                        diagrams-builder,
                        diagrams-lib >= 1.4 && < 1.6,
-                       diagrams-rasterific >= 1.4 && < 1.5,
+                       diagrams-rasterific >= 1.4 && < 1.6,
                        cmdargs >= 0.6 && < 0.11,
                        lens >= 3.8 && < 5.4,
                        JuicyPixels >= 3.1.5 && < 3.4
