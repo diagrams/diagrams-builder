@@ -19,6 +19,13 @@
 - r2 (2024-10-16):
     - allow `filepath-1.5`, `lens-5.3`, and `hashable-1.5`
     - Note it still does not support GHC 9.10 due to dependency issues.
+- r3 (2025-06-25):
+    - allow `diagrams-lib-1.5`
+    - allow `diagrams-svg-1.5`
+    - allow `diagrams-rasterific-1.5`
+    - allow `diagrams-pgf-1.5`
+    - allow `base-4.21` and `base-4.22`
+    - Test on GHC 9.10 and 9.12
 
 ## [v0.8.0.5](https://github.com/diagrams/diagrams-builder/tree/v0.8.0.5) (2020-01-21)
 
