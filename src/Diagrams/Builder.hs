@@ -81,6 +81,12 @@ data Interpret a = Interpret
   , interpExpr       :: String
   }
 
+-- hashable >= 1.5 makes Eq a superclass of Hashable. The phantom @a@ only
+-- shows up via 'typeRep' in the hash, so a field-wise Eq is consistent.
+instance Eq (Interpret a) where
+  Interpret m1 i1 e1 == Interpret m2 i2 e2 =
+    m1 == m2 && i1 == i2 && e1 == e2
+
 instance Typeable a => Hashable (Interpret a) where
   hashWithSalt s i@Interpret {..} =
     s `hashWithSalt` prettyPrint interpretModule
