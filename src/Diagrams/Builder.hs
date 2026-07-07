@@ -51,6 +51,7 @@ import           Data.Typeable
 import           Data.Word                           (Word)
 import           Numeric                             (showHex)
 import           System.Directory                    (copyFile, doesFileExist)
+import           System.Environment                  (lookupEnv)
 import           System.FilePath                     (takeBaseName,
                                                       takeExtension, (</>))
 import           System.IO                           (IOMode (WriteMode),
@@ -265,7 +266,10 @@ tempModule m f =
       liftIO $ hPutStr h (prettyPrint m') >> hClose h
     f tempFile
 
--- | Run an interpretor using sandbox from 'findSandbox'.
+-- | Run an interpretor using sandbox from 'findSandbox'. If no sandbox
+--   is found but a GHC package environment is set (e.g. by running via
+--   @cabal exec@, which sets @GHC_ENVIRONMENT@), the interpreter uses
+--   that environment so it can see the same packages.
 runSandboxInterpreter
   :: (MonadMask m, MonadIO m)
   => InterpreterT m a
@@ -275,7 +279,11 @@ runSandboxInterpreter i = do
   case mSandbox of
     Just sandbox -> let args = ["-package-db", sandbox]
                     in  unsafeRunInterpreterWithArgs args i
-    Nothing      -> runInterpreter i
+    Nothing      -> do
+      mEnv <- liftIO $ lookupEnv "GHC_ENVIRONMENT"
+      case mEnv of
+        Just env -> unsafeRunInterpreterWithArgs ["-package-env", env] i
+        Nothing  -> runInterpreter i
 
 ------------------------------------------------------------------------
 -- Utilities
