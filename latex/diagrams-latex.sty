@@ -9,7 +9,7 @@
 
 %% diagrams-latex.sty
 %% Copyright (c) 2011-2012, Ryan Yates
-%% 
+%%
 %% Large portions copied from dot2texi.sty
 %%
 %% Copyright (c) 2007-2008, Kjell Magne Fauske
@@ -52,12 +52,15 @@
 %% MA  02111-1307, USA.
 %%
 
-%% Copyright (C) 2007 by Will Robertson & Johannes Große
+%% Copyright (C) 2007 by Will Robertson & Johannes Groï¿½e
 
 \NeedsTeXFormat{LaTeX2e}[1999/12/01]
-\ProvidesPackage{diagrams-latex}[2012/04/07 v0.1 Generate diagrams embedded within LaTeX]
+\ProvidesPackage{diagrams-latex}[2026/07/07 v2.0 Generate diagrams embedded within LaTeX]
 \RequirePackage{moreverb}
 \RequirePackage{xkeyval}[2005/02/22]
+\RequirePackage{ifthen}
+
+\RequirePackage{graphics}
 
 \newif\ifdtt@ShellEscape
 %\newif\ifmiktex \miktexfalse
@@ -71,32 +74,58 @@
 \DeclareOptionX{miktex}{} % dummy (for backwards compatability)
 
 % Options for setting output size
-\DeclareOptionX{width}[]{\def\dtt@width{-w #1}}
+\DeclareOptionX{width}[]{\Gin@defaultbp\foo{#1}\def\dtt@width{-w \foo}}
 \def\dtt@width{} % default output width
-\DeclareOptionX{height}[]{\def\dtt@height{-h #1}}
+\DeclareOptionX{height}[]{\Gin@defaultbp\foo{#1}\def\dtt@height{-h \foo}}
 \def\dtt@height{} % default output height
 
 % Option for setting an output directory
 \DeclareOptionX{outputdir}[]{\def\dtt@outputdir{#1}}
-\def\dtt@outputdir{}
+\def\dtt@outputdir{diagrams}
 \DeclareOptionX{debug}{\dtt@debugtrue}
 
 \newcommand\setoutputdir[1]{\def\dtt@outputdir{#1}}
 
 % Options for setting backend
 \DeclareOptionX{backend}[]{\def\dtt@backend{#1}}
-\def\dtt@backend{cairo}  % use cairo as the default backend
+\def\dtt@backend{pgf}  % use pgf as the default backend
 \DeclareOptionX{extension}[]{\def\dtt@extension{#1}}
-\def\dtt@extension{pdf}  % default output extension of .pdf
+\newif\ifdtt@input \dtt@inputfalse
+\DeclareOptionX{input}{\dtt@inputtrue}
+\DeclareOptionX{noinput}{\dtt@inputfalse}
+
+\DeclareOptionX{cmdprefix}[]{\def\dtt@cmdprefix{#1 }}
+\def\dtt@cmdprefix{} % default command prefix
+
+\newif\ifdtt@beamer \dtt@beamerfalse
+\DeclareOptionX{beamer}{\dtt@beamertrue}
+\DeclareOptionX{nobeamer}{\dtt@beamerfalse}
 
 \ExecuteOptionsX{shell}
 
 \ProcessOptionsX\relax
 
+%% Handle option defaults for backends
+
+\ifthenelse{\equal{\dtt@backend}{cairo} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{pdf}}{}
+\ifthenelse{\equal{\dtt@backend}{pgf} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{pgf}}{}
+\ifthenelse{\equal{\dtt@backend}{svg} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{svg}}{}
+\ifthenelse{\equal{\dtt@backend}{rasterific} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{png}}{}
+\ifthenelse{\equal{\dtt@backend}{pdf} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{pdf}}{}
+\ifthenelse{\isundefined{\dtt@extension}}
+  {\def\dtt@extension{pgf}}{}
+
+\ifthenelse{\equal{\dtt@extension}{pgf} \or \equal{\dtt@extension}{tikz}}
+  {\dtt@inputtrue}{}
 
 %% The platform detection code is copied from the ifplatform package
 %% avaialable from: http://tug.ctan.org/tex-archive/macros/latex/contrib/ifplatform/
-%% Copyright (C) 2007 by Will Robertson & Johannes Große
+%% Copyright (C) 2007 by Will Robertson & Johannes Groï¿½e
 \newif\ifdtt@ShellEscapeEnabled
 \newif\ifwindows
 \edef\ip@file{\jobname.w18}
@@ -146,10 +175,12 @@
 
 % Options
 \define@key{dtt}{width}[]{%
-    \def\dtt@width{-w #1}
+    \Gin@defaultbp\foo{#1}
+    \def\dtt@width{-w \foo}
 }
 \define@key{dtt}{height}[]{%
-    \def\dtt@height{-h #1}
+    \Gin@defaultbp\foo{#1}
+    \def\dtt@height{-h \foo}
 }
 
 \define@key{dtt}{outputdir}[]{%
@@ -208,16 +239,27 @@
     \ifdtt@ForceShellEscape
         \dtt@ShellEscapetrue
     \fi
-    \immediate\write18{mkdir -p \dtt@outputdir}
+    \ifwindows
+      \immediate\write18{if not exist \dtt@outputdir\space mkdir \dtt@outputdir}
+    \else
+      \immediate\write18{mkdir -p \dtt@outputdir}
+    \fi
     \xdef\diagramslatexCutFile{\dtt@figname.hs}
-    \diagramslatexverbatimwrite{\diagramslatexCutFile}}
-    {\enddiagramslatexverbatimwrite%
+    \diagramslatexverbatimwrite{\diagramslatexCutFile}
+    }
+    {\ifdtt@beamer\ifdefined\beamer@slideinframe
+    \immediate\write\verbatim@out{overlay = \number\beamer@slideinframe\space :: Int}
+    \fi\fi
+    \enddiagramslatexverbatimwrite%
     \diagramslatexgraphicsinclude}
 
 \long\gdef\diagramslatexgraphicsprocess{%
     \ifdtt@ShellEscape
         \IfFileExists{\dtt@figname.hs}{%
-            \immediate\write18{diagrams-builder-\dtt@backend\space -o \dtt@figname.\dtt@extension\space
+            \immediate\write18{\dtt@cmdprefix diagrams-builder\space
+                -b \dtt@backend\space
+                -e dia\space
+                -o \dtt@figname.\dtt@extension\space
                 \dtt@width\space
                 \dtt@height\space
                 \dtt@figname.hs\space }%
@@ -230,7 +272,13 @@
 }
 
 \long\gdef\diagramslatexgraphicsinclude{\diagramslatexgraphicsprocess%
-    \IfFileExists{\dtt@figname.\dtt@extension}{{\includegraphics{\dtt@figname.\dtt@extension}}}
+    \IfFileExists{\dtt@figname.\dtt@extension}{
+      \ifdtt@input
+        {\input{\dtt@figname.\dtt@extension}}
+      \else
+        {\includegraphics{\dtt@figname.\dtt@extension}}
+      \fi
+    }
     {\PackageWarningNoLine{diagrams-latex}
             {Please convert \dtt@figname.hs manually}}
 }
