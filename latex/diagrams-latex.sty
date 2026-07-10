@@ -52,10 +52,10 @@
 %% MA  02111-1307, USA.
 %%
 
-%% Copyright (C) 2007 by Will Robertson & Johannes Große
+%% Copyright (C) 2007 by Will Robertson & Johannes Groï¿½e
 
 \NeedsTeXFormat{LaTeX2e}[1999/12/01]
-\ProvidesPackage{diagrams-latex}[2012/04/07 v0.1 Generate diagrams embedded within LaTeX]
+\ProvidesPackage{diagrams-latex}[2026/07/07 v2.0 Generate diagrams embedded within LaTeX]
 \RequirePackage{moreverb}
 \RequirePackage{xkeyval}[2005/02/22]
 \RequirePackage{ifthen}
@@ -88,7 +88,7 @@
 
 % Options for setting backend
 \DeclareOptionX{backend}[]{\def\dtt@backend{#1}}
-\def\dtt@backend{cairo}  % use cairo as the default backend
+\def\dtt@backend{pgf}  % use pgf as the default backend
 \DeclareOptionX{extension}[]{\def\dtt@extension{#1}}
 \newif\ifdtt@input \dtt@inputfalse
 \DeclareOptionX{input}{\dtt@inputtrue}
@@ -111,14 +111,21 @@
   {\def\dtt@extension{pdf}}{}
 \ifthenelse{\equal{\dtt@backend}{pgf} \and \isundefined{\dtt@extension}}
   {\def\dtt@extension{pgf}}{}
-\ifthenelse{\equal{\dtt@backend}{ps} \and \isundefined{\dtt@extension}}
-  {\def\dtt@extension{eps}}{}
+\ifthenelse{\equal{\dtt@backend}{svg} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{svg}}{}
+\ifthenelse{\equal{\dtt@backend}{rasterific} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{png}}{}
+\ifthenelse{\equal{\dtt@backend}{pdf} \and \isundefined{\dtt@extension}}
+  {\def\dtt@extension{pdf}}{}
+\ifthenelse{\isundefined{\dtt@extension}}
+  {\def\dtt@extension{pgf}}{}
 
-\ifthenelse{\equal{\dtt@backend}{pgf}}{\dtt@inputtrue}{}
+\ifthenelse{\equal{\dtt@extension}{pgf} \or \equal{\dtt@extension}{tikz}}
+  {\dtt@inputtrue}{}
 
 %% The platform detection code is copied from the ifplatform package
 %% avaialable from: http://tug.ctan.org/tex-archive/macros/latex/contrib/ifplatform/
-%% Copyright (C) 2007 by Will Robertson & Johannes Große
+%% Copyright (C) 2007 by Will Robertson & Johannes Groï¿½e
 \newif\ifdtt@ShellEscapeEnabled
 \newif\ifwindows
 \edef\ip@file{\jobname.w18}
@@ -249,7 +256,10 @@
 \long\gdef\diagramslatexgraphicsprocess{%
     \ifdtt@ShellEscape
         \IfFileExists{\dtt@figname.hs}{%
-            \immediate\write18{\dtt@cmdprefix diagrams-builder-\dtt@backend\space -o \dtt@figname.\dtt@extension\space
+            \immediate\write18{\dtt@cmdprefix diagrams-builder\space
+                -b \dtt@backend\space
+                -e dia\space
+                -o \dtt@figname.\dtt@extension\space
                 \dtt@width\space
                 \dtt@height\space
                 \dtt@figname.hs\space }%
